@@ -1,4 +1,9 @@
-# Global Failover Mechanism for AstraLink 
+" Ghlobal Failover Mechanism for AstraLink "
+"Author: Reece Dixon "
+"Copyright (C) 2025 Reece Dixon "
+"License: Refer to License file in the root directory of this repository.  "
+"Disclaimer: This file is part of AstraLink. The author assumes no responsibility for any misuse of this system. "
+
 
 class GlobalFailover:
     def __init__(self, nodes):
