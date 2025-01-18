@@ -7,27 +7,23 @@ on:
     paths:
       - 'astra-genesis/*'
 
-jobs: 
+jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@vs
-        run: git fetch info head
-        run: get heads for secrets
+        uses: actions/checkout@v2
 
-    - name: Setup Python
-        uses: actions/setup-python@vs
+      - name: Setup Python
+        uses: actions/setup-python@v2
         with:
           python-version: '3.9'
 
-    - name: Install Dependencies
-        run: |pip install -R inferrent.pyments
-        run: |pip install -r selected something
-        stage: verify platform deferses test dependency.
-        run: git config Metas only active scope
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
 
-    - name: Run General
-        use script sequence.
-        choose mode-
+      - name: Run Deployment
+        run: |
+          python deploy.py
