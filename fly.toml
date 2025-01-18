@@ -1,0 +1,5 @@
+app = "astralink"
+env = "production"
+volumes = 5000
+secrets = [
+]
