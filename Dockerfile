@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y \
     git cmake meson libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libidn11-dev \
     libmongoc-dev libbson-dev libyaml-dev libmicrohttpd-dev libcurl4-gnutls-dev libnghttp2-dev \
     libtins-dev libtalloc-dev iproute2 ca-certificates netbase pkg-config libpthread-stubs0-dev \
-    libpthread-workqueue-dev \
+    libpthread-workqueue-dev libunwind-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Clone and build Open5GS
