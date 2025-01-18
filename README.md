@@ -5,7 +5,7 @@ AstraLink is a highly scalable, future-proof decentralized infrastructure. It pr
 # Features
 Some of the key features of AstraLink:
 
-1. |* Blockchain integration ** with smart contracts, including user authentication, payment mechnisms, and data storage.
+1. ** Blockchain integration ** with smart contracts, including user authentication, payment mechnisms, and data storage.
   
 ...
 
