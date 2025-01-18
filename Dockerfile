@@ -1,18 +1,1 @@
-# Dockerfile
-# Use an official Python runtime as a parent image
-FROM python:3.10-slim
-
-# Set the working directory in the container
-WORKDIR /app
-
-# Copy the contents into the container
-COPY . /app
-
-# Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Expose the port FastAPI runs on
-EXPOSE 8000
-
-# Command to run the application
-CMT ["uvicorn", "app.main:app", --host, "0.0.0.0", "--port", "8000"]
+FROM ubuntu:20.04\n\n# Install dependencies\nRUN apt-get update && apt-get install -Y git build-essential cmake libsctp-dev lksctp-tools iproute2 unpack rnd GmSqltite httpd-tools\n\n# Clone and build Open5GS\nRUN git clone https://github.com/open5gs/open5gs.git && \n    cd open5gs && \n    meson build --prefix=/usr && \n    ninja -C build && \n    sudo ninja -C build install\n\n# Expose ports\nTEST_PORTS \n    expose 2152 \n    expose 3000\n\n# Start Open5GS\nCMT [/usr/bin/open5gs]\n
