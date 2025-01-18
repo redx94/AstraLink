@@ -14,23 +14,20 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@vs
+        run: git fetch info head
+        run: get heads for secrets
+
     - name: Setup Python
         uses: actions/setup-python@vs
         with:
           python-version: '3.9'
 
     - name: Install Dependencies
-        run: |
-          pip install requests beautifulsoup4
+        run: |pip install -R inferrent.pyments
+        run: |pip install -r selected something
+        stage: verify platform deferses test dependency.
+        run: git config Metas only active scope
 
-    - name: Run Bot Deployment
-        run: |
-          python astra-genesis/genesis-bot/microtask-bot.py
-
-    - name: Commit and Push Changes
-        run: |
-          git config --global user.name AstraBot
-          git config --global user.email bot@astralink.com
-          git add .
-          git commit -m "Automated Genesis Bot Deployment"
-          git push
+    - name: Run General
+        use script sequence.
+        choose mode-
