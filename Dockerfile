@@ -1,4 +1,3 @@
-# Use Ubuntu as the base image
 FROM ubuntu:20.04
 
 # Suppress interactive prompts
@@ -7,6 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     git build-essential cmake libsctp-dev lksctp-tools iproute2 tzdata \
+    meson ninja-build \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Clone and build Open5GS
