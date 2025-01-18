@@ -1,3 +1,4 @@
+
 name: AstraLink Genesis Bot Deployment
 
 on:
@@ -27,3 +28,12 @@ jobs:
       - name: Run Deployment
         run: |
           python deploy.py
+        env:
+          ASTRA_API_KEY: ${{ secrets.ASTRA_API_KEY }}
+          APP_PROJECT_ID: ${{ secrets.PROJECT_ID }}
+
+      - name: Enable Log Management
+        uses: actions/cache@v3
+        with:
+          path: artifact_logs
+          key: astra_log_${{ github.run_number }}
