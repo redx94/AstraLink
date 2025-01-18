@@ -5,10 +5,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 # Install required dependencies
 RUN apt-get update && apt-get install -y \
-    git build-essential cmake libsctp-dev lksctp-tools iproute2 tzdata \
-    meson ninja-build pkg-config libtalloc-dev postgresql-client \
-    libmongoc-1.0-0 libmongoc-dev libyaml-dev libmicrohttpd-dev \
-    libidn11-dev libcurl4-openssl-dev flex bison \
+    python3-pip python3-setuptools python3-wheel ninja-build build-essential flex bison \
+    git cmake meson libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libidn11-dev \
+    libmongoc-dev libbson-dev libyaml-dev libmicrohttpd-dev libcurl4-gnutls-dev libnghttp2-dev \
+    libtins-dev libtalloc-dev iproute2 ca-certificates netbase pkg-config \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Clone and build Open5GS
