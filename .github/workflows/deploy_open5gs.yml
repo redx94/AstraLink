@@ -10,15 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Install Flyctl
-        run: curl -L https://fly.io/install.sh | sh
+    - name: Install Flyctl
+      run: |
+        curl -L https://fly.io/install.sh | sh
+        echo 'export FLYCTL_INSTALL="$HOME/.fly"' >> $GITHUB_ENV
+        echo 'export PATH="$FLYCTL_INSTALL/bin:$PATH"' >> $GITHUB_ENV
+      shell: bash
 
-      - name: Automate Deployment
-        run: |
-          flyctl launch --auto-confirm --image open5gs/open5gs:latest
-        env:
-          FLY_APP_NAME: AstraLink_OPEN_5GS
-          FLY_ENV_NAME: production
+    - name: Deploy to Fly.io
+      run: flyctl launch --auto-confirm --image open5gs/open5gs:latest
+      env:
+        FLY_APP_NAME: AstraLink_OPEN_5GS
+        FLY_ENV_NAME: production
