@@ -25,5 +25,6 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker buildx build --platform linux/amd64 -t ${{ secrets.DOCKER_USERNAME }}/open5gs-prebuilt:latest .
-          docker push ${{ secrets.DOCKER_USERNAME }}/open5gs-prebuilt:latest
+          docker buildx build --platform linux/amd64 \
+            -t ${{ secrets.DOCKER_USERNAME }}/open5gs-prebuilt:latest . \
+            --push
