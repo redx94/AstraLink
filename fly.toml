@@ -1,5 +1,11 @@
 app = "astralink"
-env = "production"
-volumes = 5000
-secrets = [
-]
+
+[env]
+FLY_API_KEY = "your-fly-api-key"
+
+[mounts]
+source = "data"
+destination = "/data"
+
+[secrets]
+FLY_API_TOKEN = "your-fly-api-token"
