@@ -7,7 +7,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     git build-essential cmake libsctp-dev lksctp-tools iproute2 tzdata \
     meson ninja-build pkg-config libtalloc-dev postgresql-client \
-    libmongoc-1.0-0 libmongoc-dev libyaml-dev libmicrohttpd-dev flex bison libidn11 libidn11-dev \
+    libmongoc-1.0-0 libmongoc-dev libyaml-dev libmicrohttpd-dev flex bison \
+    libidn11 libidn11-dev libnghttp2-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Clone and build Open5GS
