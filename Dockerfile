@@ -11,7 +11,6 @@ RUN apt-get update && apt-get install -y \
     libidn11-dev libcurl4-openssl-dev flex \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-
 # Clone and build Open5GS
 RUN git clone https://github.com/open5gs/open5gs.git && \
     cd open5gs && \
