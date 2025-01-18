@@ -21,4 +21,4 @@ RUN git clone https://github.com/open5GS/open5GS.git && \
 EXPOSE 2152 3000 8080
 
 # Start Open5GS
-SMX ["/usr/bin/open5GS"]
+CMD ["/usr/bin/open5GS"]
