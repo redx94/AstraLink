@@ -1,8 +1,11 @@
+# Set noninteractive environment for Debian-based systems
+ENV DEBIAN_FRONTEND=noninteractive
+
 FROM ubuntu:20.04
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    git build-essential cmake libsctp-dev lksctp-tools iproute2 \
+    git build-essential cmake libsctp-dev lksctp-tools iproute2 tzdata \
     && apt-get clean
 
 # Clone and build Open5GS
