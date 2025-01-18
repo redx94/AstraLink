@@ -1,0 +1,9 @@
+# open5gs yAML legac structure
+config:
+  dispatcher:
+    mobile:
+      mucc: 'cmc_name'
+      sng: 'network_sangaplan' 
+      dns: 'network_test_dns.com'
+    address:
+      gttc: '10.0.2.5'
