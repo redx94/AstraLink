@@ -1,11 +1,23 @@
-app = "astralink"
+# fly.toml app configuration file generated for astralink on 2025-01-19T02:32:19Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-[env]
-FLY_API_KEY = "your-fly-api-key"
+app = 'astralink'
+primary_region = 'ord'
 
-[mounts]
-source = "data"
-destination = "/data"
+[build]
 
-[secrets]
-FLY_API_TOKEN = "your-fly-api-token"
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 2048
