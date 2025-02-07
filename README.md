@@ -1,4 +1,3 @@
----
 # AstraLink 🚀  
 *The Decentralized Blockchain-Based Cellular Network of the Future*
 
@@ -9,7 +8,6 @@
 ![AstraLink Banner](https://via.placeholder.com/1200x400?text=AstraLink+-+Decentralized+Telecom)
 
 ---
-
 ## Table of Contents
 - [Overview](#overview)
 - [Features](#features)
