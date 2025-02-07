@@ -5,6 +5,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/redx94/AstraLink.svg?style=social)](https://github.com/redx94/AstraLink/stargazers)
 [![Build Status](https://img.shields.io/github/workflow/status/redx94/AstraLink/CI)](https://github.com/redx94/AstraLink/actions)
 
+![Banner Image](https://github.com/redx94/AstraLink/blob/main/DALL%C2%B7E%202025-02-07%2001.58.20%20-%20A%20futuristic%20technology-themed%20banner%20for%20AstraLink%2C%20a%20decentralized%20blockchain-based%20telecom%20network.%20The%20banner%20should%20have%20a%20sleek%2C%20cyberpunk-inspi.webp)
 <!-- AstraLink Banner SVG -->
 <svg width="1200" height="400" xmlns="http://www.w3.org/2000/svg">
   <!-- Define a horizontal gradient for a dynamic background -->
