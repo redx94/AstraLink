@@ -5,7 +5,34 @@
 [![GitHub Stars](https://img.shields.io/github/stars/redx94/AstraLink.svg?style=social)](https://github.com/redx94/AstraLink/stargazers)
 [![Build Status](https://img.shields.io/github/workflow/status/redx94/AstraLink/CI)](https://github.com/redx94/AstraLink/actions)
 
-![AstraLink Banner](https://via.placeholder.com/1200x400?text=AstraLink+-+Decentralized+Telecom)
+<!-- AstraLink Banner SVG -->
+<svg width="1200" height="400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Define a horizontal gradient for a dynamic background -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00c6ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0072ff;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background rectangle using the gradient -->
+  <rect width="1200" height="400" fill="url(#grad)" />
+  <!-- Main Project Title -->
+  <text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="64" fill="white" font-weight="bold">
+    AstraLink
+  </text>
+  <!-- Subtitle -->
+  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="28" fill="white">
+    Decentralized Telecom of the Future
+  </text>
+  <!-- Additional tagline highlighting key tech areas -->
+  <text x="50%" y="65%" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="20" fill="white">
+    Blockchain • AI • Quantum-Ready
+  </text>
+</svg>
+
 
 ---
 ## Table of Contents
