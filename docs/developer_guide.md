@@ -1,89 +1,110 @@
-# Developer Guide
+# AstraLink Developer Guide
 
 ## Introduction
-Welcome to the AstraLink Developer Guide. This guide provides instructions and templates to help you develop applications using AstraLink. It covers recent changes, new commits, and detailed instructions for developers.
 
-## Recent Changes and New Commits
+Welcome to the AstraLink Developer Guide. This guide is designed to help developers understand the architecture, coding standards, and best practices for contributing to the AstraLink project. AstraLink is a decentralized blockchain-based telecom network that leverages encryption and modular design principles to facilitate secure communications.
 
-### Smart Contracts & Security Patches
-- **Enhanced Smart Contracts**: Recent commits in the `contracts` folder include improvements in smart contract logic, with additional security hardening against common vulnerabilities (e.g., reentrancy and overflow) and enhanced input validation.
-- **Security Hardening**: The updated smart contracts now include enhanced checks for edge cases and more rigorous input validation. It is recommended to continue using formal verification tools (e.g., MythX, Slither) to test against vulnerabilities in these critical modules.
+## Project Structure
 
-### AI Module Enhancements
-- **AI Algorithms**: The new commits in the `ai` directory have refined predictive models for network optimization. Review the integration of these models with blockchain transactions to ensure that data integrity is maintained.
-- **Secure Data Handling**: Enhanced encryption and key management routines appear to be in place. Consider an additional audit focused on the AI pipeline to verify that end-to-end encryption standards are consistently applied, especially where data passes between decentralized nodes.
+The project is organized into several key directories:
 
-### Infrastructure & Deployment Scripts
-- **Containerization & Deployment**: The revised `Dockerfile` and deployment scripts now better align with industry best practices. Ensure that non-root execution and minimized container footprints are verified through automated container scanning tools.
-- **CI/CD Enhancements**: The updated workflows in the `.github/workflows` directory now include additional steps for static code analysis and security scanning. Continue integrating these tools and consider periodic reviews to adapt to emerging threats.
+- **ai**: Contains AI-related modules and scripts.
+- **api**: API-related files and endpoints.
+- **app**: Main application files.
+- **astra-genesis**: Initial setup and configuration files.
+- **compliance**: Compliance-related scripts and documentation.
+- **config**: Configuration files for various components.
+- **contracts**: Smart contract files.
+- **crypto**: Cryptographic utilities and scripts.
+- **dashboard**: Dashboard-related files.
+- **decentralized_resources**: Decentralized resource management contracts.
+- **deploy**: Deployment scripts.
+- **docker_open5gs**: Docker configurations for Open5GS.
+- **docs**: Documentation files.
+- **governance**: Governance-related scripts and documentation.
+- **holography**: Holography-related files.
+- **infrastructure**: Infrastructure-related scripts and documentation.
+- **mining**: Mining-related scripts and documentation.
+- **monitoring**: Monitoring-related scripts and documentation.
+- **network**: Network-related scripts and documentation.
+- **networking**: Networking-related scripts and documentation.
+- **orchestration**: Orchestration-related scripts and documentation.
+- **quantum_network**: Quantum network-related scripts and documentation.
+- **sdk**: SDK-related files.
+- **solidity**: Solidity-related files.
+- **test**: Test-related files.
+- **tools**: Various tools and utilities.
 
-## Getting Started
+## Coding Standards
 
-### Prerequisites
-- Node.js (v14 or later)
-- npm (v6 or later)
-- Hardhat (for smart contract deployment)
+### General Guidelines
 
-### Setting Up the Development Environment
-1. **Clone the Repository**:
-   ```bash
-   git clone https://github.com/AstraLink/AstraLink.git
-   cd AstraLink
-   ```
+- **Consistency**: Follow the existing coding style and conventions.
+- **Documentation**: Ensure all functions and classes have docstrings.
+- **Testing**: Write unit tests for all new functionality.
+- **Security**: Follow security best practices, especially in cryptographic operations.
 
-2. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+### Solidity
 
-3. **Configure Environment Variables**:
-   Create a `.env` file in the root directory and add the necessary environment variables.
+- **Version**: Use Solidity version ^0.8.0.
+- **Imports**: Use relative imports for internal dependencies.
+- **Naming**: Use camelCase for functions and variables, and PascalCase for contracts and structs.
+- **Comments**: Use NatSpec format for comments.
 
-### Smart Contract Development
-- **Smart Contracts Directory**: All smart contracts are located in the `contracts` directory.
-- **Deployment Scripts**: Deployment scripts for smart contracts are located in the `deploy` directory.
+### Python
 
-### AI Module Development
-- **AI Module Directory**: All AI-related code is located in the `ai` directory.
-- **Predictive Models**: The `multiversal_forecaster.py` file contains the predictive models for network optimization.
+- **Style Guide**: Follow PEP 8.
+- **Imports**: Use absolute imports.
+- **Logging**: Use the `logging` module for logging.
+- **Type Hints**: Use type hints for function arguments and return types.
 
-### Deployment
-- **Deployment Scripts**: Deployment scripts are located in the `deploy` directory.
-- **Hardhat**: Use Hardhat for deploying smart contracts. Example deployment script:
-  ```javascript
-  const { ethers } = require("hardhat");
+## Security Best Practices
 
-  async function main() {
-    try {
-      const [deployer] = await ethers.getSigners();
-      console.log("Deploying contracts with the account:", deployer.address);
+### Cryptographic Operations
 
-      const EnhancedDynamicESIMNFT = await ethers.getContractFactory("EnhancedDynamicESIMNFT");
-      const contract = await EnhancedDynamicESIMNFT.deploy();
-      await contract.deployed();
+- **Libraries**: Use well-vetted cryptographic libraries (e.g., PyCryptodome, Python cryptography package).
+- **Key Management**: Use hardware security modules (HSMs) or secure enclaves for key storage.
+- **Randomness**: Use high-entropy sources for random number generation.
 
-      console.log("EnhancedDynamicESIMNFT deployed to:", contract.address);
-    } catch (error) {
-      console.error("Error deploying contract:", error);
-    }
-  }
+### Input Validation
 
-  main()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error(error);
-      process.exit(1);
-    });
-  ```
+- **Strict Checks**: Implement strict type and range checks on all user and network inputs.
+- **Exception Handling**: Use structured exception handling to avoid leaking sensitive details.
 
-## Contribution Guidelines
-- **Code Quality**: Ensure code quality and adherence to security practices.
-- **Peer Reviews**: Regular peer reviews and community audits will be crucial as the project evolves.
+## Testing and CI/CD
 
-## Additional Resources
-- **API Reference**: [API Reference](api_reference.md)
-- **Integration Testing Guide**: [Integration Testing Guide](integration_testing_guide.md)
-- **Troubleshooting**: [Troubleshooting](troubleshooting.md)
+### Unit Tests
+
+- **Coverage**: Ensure all new functionality has corresponding unit tests.
+- **Mocking**: Use mocking libraries to isolate dependencies.
+
+### Integration Tests
+
+- **End-to-End**: Write end-to-end tests to ensure components work together.
+- **Environment**: Use isolated environments for testing.
+
+### CI/CD Pipeline
+
+- **Automation**: Automate testing and deployment using CI/CD tools.
+- **Monitoring**: Monitor test results and deployment status.
+
+## Contributing
+
+### Setup
+
+1. **Clone the Repository**: `git clone https://github.com/yourusername/AstraLink.git`
+2. **Install Dependencies**: `npm install` or `pip install -r requirements.txt`
+3. **Run Tests**: `npm test` or `pytest`
+
+### Making Changes
+
+1. **Create a Branch**: `git checkout -b feature/your-feature`
+2. **Make Changes**: Implement your changes.
+3. **Write Tests**: Add tests for your changes.
+4. **Commit Changes**: `git commit -m "Your commit message"`
+5. **Push Changes**: `git push origin feature/your-feature`
+6. **Create a Pull Request**: Open a pull request on GitHub.
 
 ## Conclusion
-This guide provides a comprehensive overview of the AstraLink project, including recent changes, new commits, and detailed instructions for developers. By following these guidelines, you can contribute effectively to the AstraLink project and help it continue to evolve and improve.
+
+Thank you for contributing to AstraLink. By following these guidelines, you can help ensure the project remains secure, maintainable, and scalable.

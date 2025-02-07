@@ -1,4 +1,8 @@
-# AI module for multiversal timeline forecastions
+"""
+AI module for multiversal timeline forecastions
+
+This module provides a framework for forecasting future timelines using machine learning models.
+"""
 
 import numpy as np
 import logging
@@ -7,8 +11,25 @@ from sklearn.ensemble import RandomForestRegressor
 
 logging.basicConfig(level=logging.INFO)
 
+
 class MultiversalForecaster:
+    """
+    Class to manage the forecasting of multiversal timelines.
+
+    Attributes:
+        data (numpy.ndarray): The data used for training the model.
+        deep (any): Additional deep learning model if needed.
+        scaler (StandardScaler): Scaler for standardizing the data.
+        model (RandomForestRegressor): The machine learning model used for forecasting.
+    """
     def __init__(self, data, _deep=None):
+        """
+        Initializes the MultiversalForecaster with data and an optional deep learning model.
+
+        Args:
+            data (numpy.ndarray): The data used for training the model.
+            _deep (any, optional): Additional deep learning model if needed.
+        """
         self.data = data
         self.deep = _deep
         self.scaler = StandardScaler()
@@ -17,6 +38,15 @@ class MultiversalForecaster:
         self.model.fit(self.data, self.data)
 
     def forecast(self, query):
+        """
+        Forecasts future values based on the given query.
+
+        Args:
+            query (numpy.ndarray): The query data for forecasting.
+
+        Returns:
+            numpy.ndarray: The predicted future values.
+        """
         try:
             query = self.scaler.transform([query])
             return self.model.predict(query)
