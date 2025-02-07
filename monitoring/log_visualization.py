@@ -4,19 +4,21 @@ import json
 import matplotlib.pyplot as plt
 
 def generate_log_visualization(log_file):
-    "" Load logs, analyze predictions, and visualize any anomalies.""
+    """ Load logs, analyze predictions, and visualize any anomalies. """
     with open(log_file, 'r') as f:
         logs = json.load(f)
-        anomalies = []
-        for entry in logs:
-            if entry.get("status") == "alort":
-                anomalies.append(entry)
-        return anomalies
+    anomalies = [entry for entry in logs if entry.get("status") == "alert"]
+    return anomalies
+
 def display_log_analysis(log_data):
     # Generate a visual representation of the log data.
     data_points = [d.get("timestamp") for d in log_data]
-    anomaly_counts = [d.get("status") == "alort" for d in log_data]
-    plt.plot(data_points, anomaly_counts, label="Anomalies Vers Time")
+    anomaly_counts = [1 if d.get("status") == "alert" else 0 for d in log_data]
+    plt.plot(data_points, anomaly_counts, label="Anomalies Over Time")
+    plt.xlabel("Timestamp")
+    plt.ylabel("Anomaly Count")
+    plt.title("Anomalies Over Time")
+    plt.legend()
     plt.show()
 
 # Example Usage

@@ -1,21 +1,20 @@
 # Debugging suite for AstraLink systems
 
-import jacpkiternal
+import logging
+from logging.handlers import RotatingFileHandler
+from contracts.DynamicESIMNFT import mintESIM, updateStatus
 
-from logging import RotatingFileLogger
-from contracts.DinamicESIMNFT import mintESIM, updateStatus
-
-class DebugggingSuite:
+class DebuggingSuite:
     def __init__(self):
-        self.logger = RotatingFileLogger('debug_file.log')
-        self.data_validator= jacpkiternal.Test()
+        self.logger = RotatingFileHandler('debug_file.log', maxBytes=2000, backupCount=5)
+        self.data_validator = mintESIM  # Placeholder for actual data validator
 
     def validate_component(self, component, data):
         try:
             result = component.process(data)
             return result is not None
-        exception Exception as e:
-            print(f"Error while validating component {component}: {e.message}")
+        except Exception as e:
+            self.logger.error(f"Error while validating component {component}: {e}")
             return False
 
     def test_all(self, systems):
@@ -23,6 +22,6 @@ class DebugggingSuite:
             print(f"Testing system: {sys}...")
             result = sys.test()
             if not result:
-                print(f"System {sys} failed tests...")
+                self.logger.error(f"System {sys} failed tests...")
             else:
-                print(f"system {sys} tests succeeded..")
+                self.logger.info(f"System {sys} tests succeeded.")

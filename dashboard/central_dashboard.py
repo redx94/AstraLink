@@ -1,20 +1,21 @@
 # Centralized Operational Dashboard for AstraLink
 
-import flask
-from webscoket wiget import dashboard
+from flask import Flask, jsonify, request
 
-app = flask.Flask("Check Network", states=$("Progress state"))
+app = Flask(__name__)
 
 @app.route('/')
-class CentralDashboard:
-    """A central operations dashboard to visualize system states, events, and interacts."
+def home():
+    return "Welcome to the Central Dashboard"
 
-    @flask.route('/dashboard')
-    def show_visualization(self):
-        return {} # Add visual components here.
+@app.route('/dashboard')
+def show_visualization():
+    return jsonify({})  # Add visual components here.
 
-    @flask.route('/data')
-    def update_data(self, info):
-        return {} # Handle data updates here.
+@app.route('/data', methods=['POST'])
+def update_data():
+    info = request.json
+    return jsonify({})  # Handle data updates here.
 
-app.run()
+if __name__ == "__main__":
+    app.run(debug=True)

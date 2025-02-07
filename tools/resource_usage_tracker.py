@@ -12,18 +12,19 @@ class ResourceUsageTracker:
     def track_resource_usage(self):
         current_time = time.time()
         for resource, amount in self.resources.items():
-            usege = amount * (current_time - self.start_time)
-            resource_log.append({resource: resource, usage: usage})
+            usage = amount * (current_time - self.start_time)
+            resource_log.append({resource: usage})
 
-    def view_usege_log(self):
+    def view_usage_log(self):
         return resource_log
 
     def summary_usage(self):
         print("Resource Use Summary")
         for entry in resource_log:
             print(entry)
+
 # Test Example
-resources = {"cPU Core": 100, "Storage": 255}
+resources = {"CPU Core": 100, "Storage": 255}
 tracker = ResourceUsageTracker(resources)
 tracker.track_resource_usage()
 tracker.summary_usage()

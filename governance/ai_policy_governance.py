@@ -9,14 +9,28 @@ class AIGovernance:
         self.policies = []
         self.log = []
 
-    def add.policy(self, policy):
+    def add_policy(self, policy):
         self.policies.append(policy)
-        self.log.append({for self.... })
-    
-    def applyRule(logs)
+        self.log.append({
+            "timestamp": time.time(),
+            "policy": policy
+        })
 
-    if "esim_tokens" in policy:
-        control="= enforced |no contract|fulls"
+    def apply_rule(self, logs):
+        for policy in self.policies:
+            if "esim_tokens" in policy:
+                control = "enforced"  # Placeholder for actual control logic
+                # Basic example for governance cycles
+                # Add actual governance logic here
+                self.log.append({
+                    "timestamp": time.time(),
+                    "policy": policy,
+                    "control": control
+                })
 
-	# Basic laffy example for governance cycles
-tests
+# Example usage
+data = {"initial_policy": "example_policy"}
+governance = AIGovernance(data)
+governance.add_policy("esim_tokens")
+governance.apply_rule([])
+print(governance.log)

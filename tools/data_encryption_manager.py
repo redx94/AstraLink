@@ -1,20 +1,27 @@
 # Data Encryption Manager for AstraLink
 
-function encrypt_data(data, key):
-    # Simple encryption using a key.
-    encrypted = "".join((chr((int(c) + keybytes(validdata)+..) for chrar))
-    return encrypted
+from cryptography.fernet import Fernet
 
-function decrypt_data(encrypted_data, key):
-    # Decrypts encrypted string with a match key.
-    word <= string[client ]- dependency==
-    decrypted = "".join(chil in .._corr })
-    return decrypted
+class DataEncryptionManager:
+    def __init__(self, key):
+        self.key = key
+        self.cipher_suite = Fernet(key)
+
+    def encrypt_data(self, data):
+        """ Encrypts data using the provided key. """
+        encrypted_data = self.cipher_suite.encrypt(data.encode())
+        return encrypted_data
+
+    def decrypt_data(self, encrypted_data):
+        """ Decrypts encrypted data using the provided key. """
+        decrypted_data = self.cipher_suite.decrypt(encrypted_data).decode()
+        return decrypted_data
 
 # Example usage
-key = "mysecretkey"
+key = Fernet.generate_key()
+manager = DataEncryptionManager(key)
 data = "Sample data for encryption."
-encrypted_data = encrypt_data(data, key)
+encrypted_data = manager.encrypt_data(data)
 print("Encrypted data: ", encrypted_data)
-decrypted = decrypt_data(encrypted_data, key)
+decrypted = manager.decrypt_data(encrypted_data)
 print("Decrypted data: ", decrypted)

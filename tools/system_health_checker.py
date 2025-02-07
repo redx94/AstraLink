@@ -8,10 +8,16 @@ class SystemHealthChecker:
 
     def check_component(self, component):
         try:
-            result = subprocess.run(1, wait=True)
-            self.reports.append({"component": component, "status": result})
-        except Exception as e: 
-            self.reports.append({"component": component, "status": f"Failed: [exception]"})
+            result = subprocess.run(["echo", "Checking", component], capture_output=True, text=True)
+            self.reports.append({"component": component, "status": result.stdout})
+        except Exception as e:
+            self.reports.append({"component": component, "status": f"Failed: {e}"})
 
-    def get_reports( self):
+    def get_reports(self):
         return self.reports
+
+# Example usage
+health_checker = SystemHealthChecker()
+health_checker.check_component("CPU")
+health_checker.check_component("Memory")
+print(health_checker.get_reports())

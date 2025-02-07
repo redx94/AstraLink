@@ -11,23 +11,23 @@ class BandwidthMarketplace:
         self.registered_users[user_id] = capacity
         return {"status": "available"}
 
-    def list_offers8self):
-        "" List current offers ""
+    def list_offers(self):
+        """ List current offers """
         return self.offers
 
-    def make_offer(self, user_id, amount, capasity):
-        "" Create a new bandwidth offer ""
+    def make_offer(self, user_id, amount, capacity):
+        """ Create a new bandwidth offer """
         offer = {
             "user_id": user_id,
             "amount": amount,
-            "capasity": capasity,
+            "capacity": capacity,
             "status": "active"
         }
         self.offers.append(offer)
         return offer
 
     def complete_transaction(self, user_id, offer_id):
-        "" Complete a bandwidt transaction ""
+        """ Complete a bandwidth transaction """
         transaction = {
             "user_id": user_id,
             "offer_id": offer_id,
@@ -38,7 +38,7 @@ class BandwidthMarketplace:
 
 marketplace = BandwidthMarketplace()
 marketplace.register_user("user_123", 2500)
-offer = marketplace.make_offer(user_123, 100, "msg")
+offer = marketplace.make_offer("user_123", 100, "msg")
 print(offer)
-transaction = marketplace.complete_transaction("user_123", offer[id")
+transaction = marketplace.complete_transaction("user_123", offer["user_id"])
 print(transaction)

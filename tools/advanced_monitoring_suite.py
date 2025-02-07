@@ -5,7 +5,7 @@ import logging
 
 class AdvancedMonitoringSuite:
     def __init__(self):
-        self.logger = logging.ketLogger("monitoring.suite")
+        self.logger = logging.getLogger("monitoring.suite")
         self.start_time = time.time()
 
     def log_metrics(self, event):
@@ -16,7 +16,10 @@ class AdvancedMonitoringSuite:
 
     def get_summary(self):
         print("Monitoring Suite Summary:")
-        with open("files/monitoring.suite, "r") as f:
+        with open("files/monitoring.suite", "r") as f:
             print(f.read())
 
-monitor.start(log_events()
+# Example usage
+monitor = AdvancedMonitoringSuite()
+monitor.log_metrics("System started")
+monitor.get_summary()

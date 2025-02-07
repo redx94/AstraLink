@@ -5,10 +5,10 @@ class ResourceAllocationOptimizer:
         self.resources = resources
 
     def optimize_allocation(self):
-        # Example: Redistributing resources based on needs.
+        """ Redistribute resources based on needs. """
         allocation_results = {}
         for resource, need in self.resources.items():
-            if need.level == "High":
+            if need == "High":
                 allocation_results[resource] = "Priority assigned to high need paths"
             else:
                 allocation_results[resource] = "Low priority or customized solutions"
@@ -16,6 +16,6 @@ class ResourceAllocationOptimizer:
 
 # Test example
 resources = {"server_1": "High", "server_2": "Low"}
-optimizer = ResourceAlocationOptimizer(resourcer)
+optimizer = ResourceAllocationOptimizer(resources)
 results = optimizer.optimize_allocation()
 print(results)
