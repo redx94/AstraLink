@@ -17,11 +17,12 @@ RUN git clone https://github.com/open5gs/open5gs.git && \
     cd open5gs && \
     meson build --prefix=/usr && \
     ninja -C build && \
-    ninja -C build install \
+    ninja -C build install && \
+    ln -s /usr/bin/open5gs /usr/local/bin/open5gs \
     || { echo 'Open5GS build failed'; exit 1; }
 
 # Expose necessary ports
 EXPOSE 3000 8080 2152
 
 # Start Open5GS by default (can be overridden)
-CMD ["/usr/bin/open5gs"]
+CMD ["/usr/local/bin/open5gs"]

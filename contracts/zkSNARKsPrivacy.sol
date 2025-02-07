@@ -1,5 +1,5 @@
-// SPDX-License-MIT
-pragma solidity ^8.0.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 contract SecureTransactions {
     struct Transaction {
@@ -9,7 +9,7 @@ contract SecureTransactions {
 
     mapping(bytes32 => Transaction) public transactions;
 
-    function verifyProof(bytes32 _proof) public pure view returns (bool) {
+    function verifyProof(bytes32 _proof) public pure returns (bool) {
         // Placeholder proof validation based on zk-SNARKs
         // Replace with actual zk-SNARKs validation logic
         return true;
