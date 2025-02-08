@@ -6,6 +6,10 @@
     {
       "stateMutability": "payable",
       "type": "fallback"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
     }
   ],
   "bytecode": "0x",
