@@ -212,7 +212,7 @@
         },
         {
           "internalType": "uint256[]",
-          "name": "values",
+          "name": "amounts",
           "type": "uint256[]"
         },
         {
@@ -245,7 +245,7 @@
         },
         {
           "internalType": "uint256",
-          "name": "value",
+          "name": "amount",
           "type": "uint256"
         },
         {
