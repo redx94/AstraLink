@@ -3,7 +3,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) 
 [![GitHub Stars](https://img.shields.io/github/stars/redx94/AstraLink.svg?style=social)](https://github.com/redx94/AstraLink/stargazers)
-[![Build Status](https://img.shields.io/github/workflow/status/redx94/AstraLink/CI)](https://github.com/redx94/AstraLink/actions)
+[![Build and Push Prebuilt Docker Image](https://github.com/redx94/AstraLink/actions/workflows/build-and-push.yml/badge.svg)](https://github.com/redx94/AstraLink/actions/workflows/build-and-push.yml)
 
 
 ## AstraLink - The Decentralized Blockchain-Based Telecom Network
