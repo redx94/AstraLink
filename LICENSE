@@ -2,26 +2,34 @@
 
 Copyright (C) 2025 Reece Dixon
 
-## Terms of Use:
-- Permission is hereby granted to use and modify this system under the following conditions:
-   - Proper attribution must be given to the original author (Reece Dixon).
-   - The system must not be used for unethical or illegal purposes.
+## License Type
+AstraLink is licensed under a Hybrid Open-Source & Commercial License:
+- **Core Components:** Apache 2.0 (Open-Source)
+- **AI & Advanced Features:** Business Source License (BSL)
+- **Enterprise Deployment:** Requires a separate commercial license
 
-## Disclaimer:
-- The author assumes no responsibility for the misuse of this system.
-- The system is provided "as is" without warranty of any kind.
+## Terms of Use
+- Permission is granted to use and modify this system under the following conditions:
+  - **Attribution:** Proper credit must be given to the original author (Reece Dixon).
+  - **Ethical Use:** The system **must not** be used for illegal, unethical, or malicious purposes.
+  - **No Unauthorized Commercialization:** Users may not resell, repackage, or license AstraLink without explicit authorization.
 
-## Pricing Structure:
-1. **Free Tier** :
-   - Limited features.
-   - Open-source usage.
+## Commercial Use & Monetization
+- The **Pro Tier** is for individual developers or small teams.
+- The **Enterprise Tier** is for businesses or institutions requiring full-scale deployment.
+- **Redistribution of AstraLink in a closed-source product requires an Enterprise License.**
+- A **custom licensing agreement** is required for organizations exceeding 1,000+ users.
+- Users may not create derivative products and monetize without explicit approval from the author.
 
-2. **Pro Tier** :
-   - Advanced features.
-   - Monthly Subscription Fee.
+## Liability & Security Disclaimer
+- AstraLink is provided **"as is"**, with no guarantees on uptime, security, or regulatory compliance.
+- The author is **not liable** for financial losses, smart contract vulnerabilities, or third-party breaches.
+- Users deploy AstraLink **at their own risk**, with an understanding of decentralized network limitations.
+- No claims can be made against the author for direct, indirect, or consequential damages arising from use.
 
-3. **Enterprise Tier** :
-   - Full System Access.
-   - Custom Pricing for Large-Scale Use.
+## Enforcement & Legal Compliance
+- Violation of these terms **may result in legal action.**
+- Any disputes shall be resolved under the jurisdiction of **[Your Chosen Legal Jurisdiction]**.
+- Users agree to abide by all applicable local, national, and international laws when deploying AstraLink.
 
-for more details, contact the author or refer to the documentation.
+For licensing inquiries or commercial agreements, contact **reece.dixon@quantum.api**.
