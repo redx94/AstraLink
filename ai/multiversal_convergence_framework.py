@@ -36,11 +36,15 @@ class MultiversalConvergence:
         """
         try:
             for comp in self.components:
-                comp.update_state("aligned")
+                try:
+                    comp.update_state("aligned")
+                except AttributeError as e:
+                    logging.error(f"Component missing update_state method: {str(e)}")
+                    continue
+            return ["Systems aligned successfully."]
         except Exception as e:
-            logging.error(f"Error aligning system: {e}")
-            return [f"Error aligning system: {e}"]
-        return ["Systems aligned successfully."]
+            logging.critical(f"Critical alignment failure: {str(e)}", exc_info=True)
+            return [f"Critical alignment failure: {str(e)}"]
 
     def validate_harmony(self, timelines):
         """

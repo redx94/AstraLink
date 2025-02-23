@@ -8,19 +8,26 @@ Disclaimer:
 This file is part of AstraLink. The author assumes no responsibility for any misuse of this system.
 
 from web3 import Web3
+from cryptography.fernet import Fernet
+from eth_account import Account
+import secrets
 
 class WalletManager:
     "Responsible for managing wallets for cryptocurrencies."
 
     def __init__(self, rpc_url):
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
+        self.encryption_key = Fernet.generate_key()
+        self.cipher_suite = Fernet(self.encryption_key)
 
     def create_wallet(self):
         "Generates a new wallet and returns its address and private key."
-        account = self.web3.eth.account.create()
+        entropy = secrets.token_bytes(32)
+        account = Account.create(entropy)
+        encrypted_key = self.cipher_suite.encrypt(account.privateKey)
         return {
             "address": account.address,
-            "private_key": account.privateKey.hex()
+            "encrypted_private_key": encrypted_key
         }
 
     def get_balance(self, address):

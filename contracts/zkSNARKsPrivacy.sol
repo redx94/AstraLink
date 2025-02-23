@@ -2,12 +2,19 @@
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./Verifier.sol"; // Import zk-SNARK verifier contract
 
 /**
  * @title SecureTransactions
  * @dev This contract manages secure transactions using zk-SNARKs for proof verification.
  */
 contract SecureTransactions is ReentrancyGuard, Ownable {
+    Verifier public verifier;
+    
+    constructor(address _verifierAddress) {
+        verifier = Verifier(_verifierAddress);
+    }
+
     /**
      * @dev Struct to hold transaction details.
      */
@@ -23,25 +30,40 @@ contract SecureTransactions is ReentrancyGuard, Ownable {
 
     /**
      * @dev Function to verify the zk-SNARK proof.
-     * @param _proof The proof to verify.
+     * @param a The first part of the proof.
+     * @param b The second part of the proof.
+     * @param c The third part of the proof.
+     * @param input The input to the proof.
      * @return True if the proof is valid, false otherwise.
      */
-    function verifyProof(bytes32 _proof) public pure returns (bool) {
-        // Actual zk-SNARKs validation logic
-        // This is a placeholder implementation. Replace with actual zk-SNARKs validation.
-        // For example, you might use a library like circomlib to verify the proof.
-        // Here we assume the proof is valid for demonstration purposes.
-        return true;
+    function verifyProof(
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input
+    ) public view returns (bool) {
+        return verifier.verifyProof(a, b, c, input);
     }
 
     /**
      * @dev Function to transfer funds with proof verification.
      * @param _sender The sender address.
      * @param _receiver The receiver address.
-     * @param _proof The proof of the transaction.
+     * @param a The first part of the proof.
+     * @param b The second part of the proof.
+     * @param c The third part of the proof.
+     * @param input The input to the proof.
      */
-    function transfer(address _sender, address _receiver, bytes32 _proof) public nonReentrant onlyOwner {
-        require(verifyProof(_proof), "Proof failed");
-        transactions[_proof] = Transaction(_sender, _receiver);
+    function transfer(
+        address _sender,
+        address _receiver,
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input
+    ) public nonReentrant onlyOwner {
+        require(verifyProof(a, b, c, input), "Invalid zk-SNARK proof");
+        transactions[keccak256(abi.encodePacked(a, b, c, input))] = 
+            Transaction(_sender, _receiver);
     }
 }

@@ -1,4 +1,3 @@
-
 ---
 # AstraLink 🚀  
 **The Decentralized, Blockchain-Powered Telecom Ecosystem of Tomorrow**
@@ -33,24 +32,35 @@ To get started, feel free to clone or fork the project, star the repository to s
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
+- [Microtask Bot](#microtask-bot)
 
 ---
 
-Overview
-AstraLink is a groundbreaking decentralized telecom network that leverages blockchain technology, artificial intelligence, and advanced cryptographic protocols to revolutionize connectivity. Designed for a future where telecom infrastructure is resilient and adaptive, AstraLink offers a trustless, secure, and scalable ecosystem for cellular communications.
+## Overview
+AstraLink is a quantum-classical hybrid system with AI-driven materials discovery capabilities.
 
-Key Innovations:
+## Features
+- Quantum-Classical Control System
+- AI-Driven Materials Discovery
+- Adaptive Error Correction
+- Configuration Management
 
-Immutable Node Registration: Smart contracts ensure tamper-proof record keeping.
-Adaptive AI Optimization: Real-time predictive analytics and self-healing network management driven by advanced machine learning and chaos theory.
-Quantum-Resistant Security: Incorporates next-generation cryptography to safeguard data against emerging quantum threats.
-Key Features
-Decentralized Telecom Backbone: Replace traditional centralized systems with a blockchain-driven network.
-Smart Contract Governance: Solidity-based contracts manage node registration, transaction logging, and automated governance.
-AI-Driven Network Optimization: Dynamic traffic prediction, anomaly detection, and adaptive resource allocation.
-Quantum-Resilient Cryptography: Implementation of zero-knowledge proofs and verifiable random functions.
-Seamless Integration: Designed for interoperability with legacy telecom systems, IoT devices, and edge-computing platforms.
-Self-Sustaining Economy: Native token (ASTRA) supports payments, staking rewards, and incentivizes optimal network performance.
+## Setup
+1. Install dependencies
+2. Configure environment variables
+3. Initialize quantum system
+4. Start AI services
+
+## Architecture
+- `/src/config`: Configuration management
+- `/src/core`: Core functionality and error handling
+- `/src/quantum`: Quantum control systems
+- `/src/ai`: AI and materials discovery
+
+## Contributing
+Please follow the contribution guidelines in CONTRIBUTING.md
+
+---
 
 ## Architecture & Technology Stack
   1. Blockchain Layer
@@ -103,6 +113,16 @@ docker build -t astralink .
 docker run -d --name astralink -p 8080:8080 astralink
 ```
 *Alternatively, rely on GitHub Actions to automatically build and push secure images to your preferred container registry.*
+
+### **Quick Start with Docker Compose**
+```bash
+# Clone the repository
+git clone https://github.com/redx94/AstraLink.git
+cd AstraLink
+
+# Start the services using Docker Compose
+docker-compose up -d
+```
 
 ---
 
@@ -184,8 +204,36 @@ Please refer to the license file for further details on permitted uses and restr
 ## Contact
 For inquiries, support, or collaboration opportunities, please reach out via:  
 - **Email:** [reece.dixon@quantum.api](mailto:reece.dixon@quantum.api)  
-- **Discord:** [AstraLink Community COMING SOON]  
+- **Discord:**
 - **GitHub Issues:** Submit an issue on [GitHub](https://github.com/redx94/AstraLink/issues)
+
+---
+
+## Microtask Bot
+
+The microtask bot monitors Gitcoin for available bounties and stores them locally for processing.
+
+### Features
+- Automated bounty fetching from Gitcoin
+- Configurable polling interval
+- Error handling and logging
+- JSON storage of bounty data
+
+### Setup
+1. Install dependencies:
+```bash
+pip install requests
+```
+
+2. Run the bot:
+```bash
+python astra-genesis/genesis-bot/microtask-bot.py
+```
+
+### Configuration
+- `GITCOIN_API_URL`: Gitcoin API endpoint
+- `POLL_INTERVAL`: Time between API calls (in seconds)
+- `OUTPUT_FILE`: Path to store bounty data
 
 ---
 

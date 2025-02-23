@@ -1,0 +1,8 @@
+test:
+  database:
+    url: sqlite:///:memory:
+  api:
+    base_url: http://localhost:8000
+  logging:
+    level: DEBUG
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

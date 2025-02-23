@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:4.4
+    container_name: mongodb
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - open5gs_network
+
+  open5gs-amf:
+    build:
+      context: .
+      dockerfile: Dockerfile.amf
+    container_name: open5gs-amf
+    depends_on:
+      - mongodb
+    networks:
+      - open5gs_network
+    volumes:
+      - ./config:/etc/open5gs
+    cap_add:
+      - NET_ADMIN
+
+  open5gs-upf:
+    build:
+      context: .
+      dockerfile: Dockerfile.upf
+    container_name: open5gs-upf
+    depends_on:
+      - mongodb
+    networks:
+      - open5gs_network
+    volumes:
+      - ./config:/etc/open5gs
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+    sysctls:
+      - net.ipv4.ip_forward=1
+
+  open5gs-smf:
+    build:
+      context: .
+      dockerfile: Dockerfile.smf
+    container_name: open5gs-smf
+    depends_on:
+      - mongodb
+    networks:
+      - open5gs_network
+    volumes:
+      - ./config:/etc/open5gs
+
+  astralink-controller:
+    build:
+      context: .
+      dockerfile: Dockerfile.controller
+    container_name: astralink-controller
+    depends_on:
+      - open5gs-amf
+      - open5gs-upf
+      - open5gs-smf
+    networks:
+      - open5gs_network
+    environment:
+      - SMART_CONTRACT_ADDRESS=${SMART_CONTRACT_ADDRESS}
+      - WEB3_PROVIDER=${WEB3_PROVIDER}
+      - TECH_OWNER_WALLET=${TECH_OWNER_WALLET}
+
+networks:
+  open5gs_network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

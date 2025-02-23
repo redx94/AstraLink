@@ -1,28 +1,13 @@
-FROM ubuntu:20.04
+FROM python:3.9-slim
 
-# Suppress interactive prompts
-ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
 
-# Install required dependencies
-RUN apt-get update && apt-get install -y \
-    python3-pip python3-setuptools python3-wheel ninja-build build-essential flex bison \
-    git cmake meson libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libidn11-dev \
-    libmongoc-dev libbson-dev libyaml-dev libmicrohttpd-dev libcurl4-gnutls-dev libnghttp2-dev \
-    libtins-dev libtalloc-dev iproute2 ca-certificates netbase pkg-config libpthread-stubs0-dev \
-    libpthread-workqueue-dev libunwind-dev \
-    || { echo 'Dependency installation failed'; apt-get install -y --fix-broken; exit 1; }
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Clone and build Open5GS
-RUN git clone https://github.com/open5gs/open5gs.git && \
-    cd open5gs && \
-    meson build --prefix=/usr && \
-    ninja -C build && \
-    ninja -C build install && \
-    ln -s /usr/bin/open5gs /usr/local/bin/open5gs \
-    || { echo 'Open5GS build failed'; exit 1; }
+COPY app/ ./app/
 
-# Expose necessary ports
-EXPOSE 3000 8080 2152
+ENV PYTHONPATH=/app
+ENV PORT=8000
 
-# Start Open5GS by default (can be overridden)
-CMD ["/usr/local/bin/open5gs"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -2,6 +2,7 @@
 
 import json
 import time
+import logging
 
 class AIGovernance:
     def __init__(self, data):
@@ -19,18 +20,44 @@ class AIGovernance:
     def apply_rule(self, logs):
         for policy in self.policies:
             if "esim_tokens" in policy:
-                control = "enforced"  # Placeholder for actual control logic
-                # Basic example for governance cycles
-                # Add actual governance logic here
+                # Implement concrete policy control logic
+                control = self._enforce_esim_policy(policy, logs)
                 self.log.append({
                     "timestamp": time.time(),
                     "policy": policy,
-                    "control": control
+                    "control": control["status"],
+                    "metrics": control["metrics"]
                 })
 
-# Example usage
-data = {"initial_policy": "example_policy"}
-governance = AIGovernance(data)
-governance.add_policy("esim_tokens")
-governance.apply_rule([])
-print(governance.log)
+    def _enforce_esim_policy(self, policy, logs):
+        """Enforce eSIM token policy with concrete rules"""
+        try:
+            # Extract policy parameters
+            token_limit = policy.get("token_limit", 1000)
+            rate_limit = policy.get("rate_limit", 100)  # tokens per hour
+            
+            # Analyze current token usage
+            current_usage = self._analyze_token_usage(logs)
+            
+            # Check against limits
+            if current_usage["total"] > token_limit:
+                return {
+                    "status": "blocked",
+                    "metrics": {
+                        "reason": "token_limit_exceeded",
+                        "current": current_usage["total"],
+                        "limit": token_limit
+                    }
+                }
+            
+            if current_usage["rate"] > rate_limit:
+                return {
+                    "status": "rate_limited",
+                    "metrics": {
+                        "reason": "rate_limit_exceeded",
+                        "current_rate": current_usage["rate"],
+                        "limit": rate_limit
+                    }
+                }
+            
+            return {

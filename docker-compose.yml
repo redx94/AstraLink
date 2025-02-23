@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: mongo:6.0
+    image: mongo:6.0 # Verify image name and version during deployment
     container_name: mongo
     command: --bind_ip 0.0.0.0
     env_file:
