@@ -1,8 +1,3 @@
----
-# AstraLink 🚀  
-**The Decentralized, Blockchain-Powered Telecom Ecosystem of Tomorrow**
-
----
 
 # Developers: Join the Revolution!
 **Are you passionate about blockchain, AI, and next-generation telecom solutions? AstraLink is building the decentralized cellular network of the future, and we need visionary developers to help bring this project to life. If you're ready to push the boundaries of connectivity and security, join our collaboration efforts today!
