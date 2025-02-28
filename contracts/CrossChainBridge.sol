@@ -1,26 +1,28 @@
-// SPDX-License-MIT
-pragma solidity ^8.0.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
 contract CrossChainBridge {
     struct Bridge {
+        bytes32 id;
         string sourceChain;
         string destinationChain;
     }
-    mapping(bytes32 => Bridge) public bridges;
+    
+    Bridge[] public bridges;
+    mapping(bytes32 => bool) public bridgeExists;
 
     function addBridge(string memory _sourceChain, string memory _destinationChain) public {
         bytes32 bridgeId = keccak256(abi.encodePacked(_sourceChain, _destinationChain));
-        bridges[bridgeId] = Bridge(_sourceChain, _destinationChain);
+        require(!bridgeExists[bridgeId], "Bridge already exists");
+        
+        bridges.push(Bridge(bridgeId, _sourceChain, _destinationChain));
+        bridgeExists[bridgeId] = true;
     }
 
     function getBridges() public view returns (Bridge[] memory) {
         Bridge[] memory result = new Bridge[](bridges.length);
-        uint256 index = 0;
         for (uint256 i = 0; i < bridges.length; i++) {
-            if (bridges[i].sourceChain != "") {
-                result[index] = bridges[i];
-                index++;
-            }
+            result[i] = bridges[i];
         }
         return result;
     }

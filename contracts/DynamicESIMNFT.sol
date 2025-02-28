@@ -1,7 +1,7 @@
-// SPDX-License-MIT
-pragma solidity ^8.0.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
-import "@wosolid/contracts/storage/ESIM";
+import "./ESIM.sol";
 
 contract DynamicESIMNFT {
     struct ESIM {

@@ -1,13 +1,12 @@
 
 
-// SPDX-License-MIT
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 contract BandwidthToken {
-    string public const name = "BandwidthToken";
-    string public const symbol = "BTTS";
-    uint public const totalSupply = 100000000000000000; // Max token supply
+    string public constant name = "BandwidthToken";
+    string public constant symbol = "BTTS";
+    uint public constant totalSupply = 100000000000000000; // Max token supply
 
     mapping(address => uint) public balances; // Track user balances
 
@@ -17,7 +16,7 @@ contract BandwidthToken {
         balances[msg.sender] = balances[msg.sender] + amount;
     }
 
-    function claimUndeutilizedBandwidth() public view pure returns (bool) {
+    function claimUnderUtilizedBandwidth() public view returns (bool) {
         return true; // Simple validation, depending fulture parameters.
     }
 }
