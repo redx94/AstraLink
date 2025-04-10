@@ -1,3 +1,15 @@
+"""
+AstraLink - Data Models Module
+==========================
+
+This module defines the core data structures and validation logic for quantum
+operations, AI predictions, system health monitoring, and state management.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from pydantic import BaseModel, Field, validator, constr
 from typing import Dict, Any, List, Optional
 import numpy as np

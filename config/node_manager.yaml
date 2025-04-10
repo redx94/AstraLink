@@ -1,0 +1,104 @@
+# AstraLink Node Manager Configuration
+# ==================================
+
+# Authentication
+auth_token: null  # Will be auto-generated on first run
+
+# Default node for commands when none specified
+default_node: null
+
+# API Configuration
+api:
+  url: "https://api.quantum.api"
+  version: "v1"
+  timeout: 30
+
+# Node Templates
+templates:
+  standard:
+    quantum:
+      error_threshold: 0.001
+      memory_limit: "8G"
+      correction_algorithm: "surface_code"
+    
+    cellular:
+      stack_type: "3GPP"
+      sdr_enabled: true
+      satellite_enabled: true
+    
+    blockchain:
+      chain_id: 22625
+      network: "mainnet"
+    
+    handshake:
+      domain: "quantum.api"
+      network: "mainnet"
+
+  development:
+    quantum:
+      error_threshold: 0.01
+      memory_limit: "4G"
+      correction_algorithm: "basic"
+      simulation_mode: true
+    
+    cellular:
+      stack_type: "3GPP"
+      sdr_enabled: true
+      satellite_enabled: false
+      mock_hardware: true
+    
+    blockchain:
+      chain_id: 22626
+      network: "testnet"
+    
+    handshake:
+      domain: "test.quantum.api"
+      network: "testnet"
+
+# Example Usage:
+# 
+# List all nodes:
+#   python tools/node_manager_cli.py list
+# 
+# Get node status:
+#   python tools/node_manager_cli.py status <node_id>
+# 
+# Update node config:
+#   python tools/node_manager_cli.py config <node_id> config.yaml
+# 
+# Restart node:
+#   python tools/node_manager_cli.py restart <node_id>
+# 
+# Get logs:
+#   python tools/node_manager_cli.py logs <node_id> --service quantum --lines 100
+# 
+# Get metrics:
+#   python tools/node_manager_cli.py metrics <node_id> --type performance
+
+# Node Configuration Example:
+# 
+# network:
+#   node_id: "node1"
+#   domain: "node1.quantum.api"
+#   environment: "mainnet"
+#   quantum:
+#     error_threshold: 0.001
+#     memory_limit: "8G"
+#     correction_algorithm: "surface_code"
+#   cellular:
+#     stack_type: "3GPP"
+#     sdr_enabled: true
+#     satellite_enabled: true
+#   blockchain:
+#     chain_id: 22625
+#     network: "mainnet"
+#   handshake:
+#     domain: "quantum.api"
+#     network: "mainnet"
+#   monitoring:
+#     metrics_interval: "1s"
+#     log_level: "info"
+#     alert_thresholds:
+#       error_rate: 0.01
+#       latency: "10ms"
+#       quantum_error: 0.001

@@ -1,0 +1,95 @@
+[Unit]
+Description=AstraLink Quantum Operations
+After=network.target
+Before=astralink-cellular.service astralink-blockchain.service
+PartOf=astralink-node.service
+
+[Service]
+Type=notify
+User=astralink
+Group=astralink
+RuntimeDirectory=astralink-quantum
+RuntimeDirectoryMode=0700
+WorkingDirectory=/opt/astralink
+
+# Environment setup
+Environment=QUANTUM_MEMORY_LIMIT=8G
+Environment=QUANTUM_PROCESSOR_AFFINITY=0-3
+Environment=QUANTUM_ERROR_THRESHOLD=0.001
+EnvironmentFile=/etc/astralink/quantum.env
+
+# Hardware security module access
+DeviceAllow=/dev/crypto/*
+DeviceAllow=/dev/tpm*
+
+# Execution
+ExecStartPre=/usr/bin/python3 -m astralink.quantum.system_check
+ExecStart=/usr/bin/python3 -m astralink.quantum.quantum_manager
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=1
+TimeoutStartSec=60
+
+# Resource limits for quantum operations
+MemoryHigh=12G
+MemoryMax=16G
+CPUWeight=90
+CPUQuota=400%
+IOWeight=90
+LimitMEMLOCK=infinity
+LimitNOFILE=1048576
+
+# Processor and memory optimization
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=95
+CPUAffinity=0-3
+NonBlocking=true
+
+# Security hardening
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=false  # Need access to crypto devices
+NoNewPrivileges=true
+SecureBits=keep-caps
+CapabilityBoundingSet=CAP_IPC_LOCK CAP_SYS_ADMIN
+AmbientCapabilities=CAP_IPC_LOCK CAP_SYS_ADMIN
+
+# Memory protection for quantum states
+MemoryDenyWriteExecute=yes
+RestrictRealtime=no
+RestrictNamespaces=~ipc
+
+# TPM and crypto device access
+DevicePolicy=closed
+DeviceAllow=/dev/tpm0 rw
+DeviceAllow=/dev/crypto rw
+DeviceAllow=/dev/hwrng r
+
+# Quantum-specific security
+SystemCallFilter=@system-service @resources @process @io-event
+SystemCallFilter=~@clock @cpu-emulation @debug @mount @obsolete @privileged @raw-io
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+PrivateNetwork=false
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+# Error handling
+FailureAction=none
+TimeoutStopSec=30s
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astralink-quantum
+LogRateLimitIntervalSec=30
+LogRateLimitBurst=10000
+
+[Install]
+WantedBy=astralink-node.service

@@ -1,344 +1,307 @@
-from typing import List, Optional, Tuple
+"""
+AstraLink - Quantum Error Correction Module
+========================================
+
+This module implements quantum error correction mechanisms for protecting quantum
+states and circuits from decoherence and noise in quantum communications.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
+from typing import List, Dict, Any, Tuple, Optional
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, execute, Aer
+from qiskit.circuit.library import Surface17
+from qiskit.quantum_info import Kraus, SuperOp
+from qiskit.providers.aer.noise import NoiseModel
+from qiskit.providers.aer.noise.errors import depolarizing_error, thermal_relaxation_error
 import numpy as np
-from qiskit import QuantumCircuit, execute, Aer, QuantumRegister, ClassicalRegister
-from qiskit.providers.aer.noise import NoiseModel, thermal_relaxation_error, QuantumError
+import scipy.linalg
 import logging
+from app.logging_config import get_logger
+from app.exceptions import QuantumSystemError
+
+logger = get_logger(__name__)
 
 class QuantumErrorCorrection:
-    def __init__(self, error_threshold: float = 0.01):
-        self.error_threshold = error_threshold
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        self.config = config or {}
+        self.error_threshold = self.config.get('error_threshold', 0.01)
+        self.max_correction_iterations = self.config.get('max_iterations', 3)
+        self.stabilizer_measurements = self.config.get('stabilizer_measurements', 7)
         self.noise_model = self._create_noise_model()
-        self.backend = Aer.get_backend('qasm_simulator')
-        self.logger = logging.getLogger(__name__)
+        self._initialize_error_correction()
 
-    def _create_noise_model(self) -> NoiseModel:
-        noise_model = NoiseModel()
-        # Add realistic 5G/6G noise characteristics
-        noise_model.add_all_qubit_quantum_error(
-            thermal_relaxation_error(
-                T1=self._calculate_t1_coherence_time(),
-                T2=self._calculate_t2_coherence_time(),
-                p_reset=self._get_reset_probability()
-            ),
-            ['u1', 'u2', 'u3', 'reset']
-        )
-        # Add mmWave frequency noise modeling
-        noise_model.add_quantum_error(
-            self._create_mmwave_noise(),
-            ['cx'], [0, 1]
-        )
-        return noise_model
-
-    def _calculate_t1_coherence_time(self) -> float:
-        """Enhanced T1 calculation with environmental compensation"""
-        base_coherence = 75000  # Increased from 50000 ns for modern quantum hardware
-        weather_factor = self._calculate_weather_impact()
-        shielding_factor = self._calculate_electromagnetic_shielding()
-        
-        return base_coherence * self.temperature_factor * self.frequency_factor * weather_factor * shielding_factor
-
-    def _calculate_weather_impact(self) -> float:
-        """Calculate weather impact on quantum coherence"""
-        # Implementation of real-world weather effects on quantum systems
-        humidity_factor = 1.0 - (self.humidity / 200)  # Humidity compensation
-        pressure_factor = 1.0 - abs(self.pressure - 101.325) / 101.325  # Atmospheric pressure
-        return humidity_factor * pressure_factor
-
-    def _calculate_t2_coherence_time(self) -> float:
-        """Calculate T2 dephasing time including environmental effects"""
-        t1 = self._calculate_t1_coherence_time()
-        dephasing_factor = np.exp(-self.magnetic_field_strength / 1000)
-        return 2 * t1 * dephasing_factor
-
-    def _create_mmwave_noise(self) -> QuantumError:
-        """Enhanced mmWave noise modeling for 5G/6G frequencies"""
-        # Advanced noise modeling for telecom frequencies
-        frequency_bands = {
-            '5G_low': 3.5e9,   # 3.5 GHz
-            '5G_mid': 28e9,    # 28 GHz
-            '5G_high': 39e9,   # 39 GHz
-            '6G_low': 100e9,   # 100 GHz
-            '6G_mid': 300e9,   # 300 GHz
-            '6G_high': 500e9   # 500 GHz
-        }
-        
-        # Calculate composite noise profile
-        noise_profile = self._calculate_composite_noise(frequency_bands)
-        
-        # Create quantum error channels
-        error_channels = []
-        for band, freq in frequency_bands.items():
-            channel = self._create_frequency_specific_noise(freq, noise_profile)
-            error_channels.append(channel)
-            
-        return self._combine_error_channels(error_channels)
-
-    def _calculate_composite_noise(self, frequency_bands: dict) -> dict:
-        """Calculate comprehensive noise profile for all frequency bands"""
-        noise_profiles = {}
-        for band, freq in frequency_bands.items():
-            atmospheric_loss = self._calculate_atmospheric_loss(freq)
-            rain_attenuation = self._calculate_rain_attenuation(freq)
-            scattering_loss = self._calculate_scattering_loss(freq)
-            
-            noise_profiles[band] = {
-                'atmospheric_loss': atmospheric_loss,
-                'rain_attenuation': rain_attenuation,
-                'scattering_loss': scattering_loss,
-                'total_loss': atmospheric_loss + rain_attenuation + scattering_loss
-            }
-        
-        return noise_profiles
-
-    def apply_error_correction(self, circuit: QuantumCircuit) -> Tuple[QuantumCircuit, float]:
-        """Enhanced error correction with adaptive feedback"""
+    def _initialize_error_correction(self):
+        """Initialize quantum error correction components"""
         try:
-            # Apply surface code with dynamic threshold adjustment
-            corrected_circuit = self._apply_adaptive_surface_code(circuit)
-            
-            # Apply frequency-specific error mitigation
-            corrected_circuit = self._apply_frequency_specific_correction(corrected_circuit)
-            
-            # Verify correction quality with enhanced metrics
-            fidelity = self._verify_correction_quality(corrected_circuit)
-            
-            if fidelity < self.error_threshold:
-                # Apply additional error correction layers
-                corrected_circuit = self._apply_emergency_correction(corrected_circuit)
-                fidelity = self._verify_correction_quality(corrected_circuit)
-            
-            return corrected_circuit, fidelity
-            
+            self.surface_code = Surface17()
+            self.correction_circuits = self._create_correction_circuits()
+            logger.info("Quantum error correction initialized")
         except Exception as e:
-            self.logger.error(f"Error correction failed: {str(e)}")
-            raise
+            logger.error(f"Error correction initialization failed: {str(e)}")
+            raise QuantumSystemError("Failed to initialize error correction")
 
-    def apply_surface_code_correction(self, circuit: QuantumCircuit) -> Tuple[QuantumCircuit, float]:
-        """Advanced surface code implementation for telecom data protection"""
-        n_data = circuit.num_qubits
-        n_ancilla = n_data - 1
-        
-        corrected = QuantumCircuit(QuantumRegister(n_data + n_ancilla, 'data'),
-                                 ClassicalRegister(n_ancilla, 'syndrome'))
-        
-        # Add stabilizer measurements
-        for i in range(n_ancilla):
-            corrected.h(i + n_data)
-            corrected.cnot(i + n_data, i)
-            corrected.cnot(i + n_data, i + 1)
-            corrected.h(i + n_data)
-            corrected.measure(i + n_data, i)
-        
-        return corrected, self._calculate_fidelity(corrected)
+    def _create_correction_circuits(self) -> Dict[str, QuantumCircuit]:
+        """Create specialized correction circuits for telecom operations"""
+        circuits = {}
+        try:
+            # X-error correction circuit
+            x_circuit = QuantumCircuit(5, 4)
+            x_circuit.h([0, 1])
+            x_circuit.cx(0, 2)
+            x_circuit.cx(1, 2)
+            x_circuit.h([0, 1])
+            x_circuit.measure([0, 1], [0, 1])
+            circuits['x_correction'] = x_circuit
+
+            # Z-error correction circuit
+            z_circuit = QuantumCircuit(5, 4)
+            z_circuit.cx(0, 2)
+            z_circuit.cx(1, 2)
+            z_circuit.measure([0, 1], [2, 3])
+            circuits['z_correction'] = z_circuit
+
+            # Phase error correction
+            p_circuit = QuantumCircuit(5, 4)
+            p_circuit.h([0, 1, 2])
+            p_circuit.cx(0, 3)
+            p_circuit.cx(1, 3)
+            p_circuit.cx(2, 3)
+            p_circuit.h([0, 1, 2])
+            circuits['phase_correction'] = p_circuit
+
+            return circuits
+        except Exception as e:
+            logger.error(f"Failed to create correction circuits: {str(e)}")
+            raise QuantumSystemError("Correction circuit creation failed")
+
+    async def apply_error_correction(
+        self,
+        circuit: QuantumCircuit,
+        error_type: str = 'all'
+    ) -> QuantumCircuit:
+        """Apply quantum error correction to circuit"""
+        correlation_id = circuit.name if circuit.name else 'unknown'
+        logger.info(
+            "Starting error correction",
+            correlation_id=correlation_id,
+            context={"error_type": error_type}
+        )
+
+        try:
+            # Apply surface code stabilizers
+            protected_circuit = self._apply_surface_code(circuit)
+
+            # Apply specific error corrections
+            if error_type in ['all', 'x']:
+                protected_circuit = self._correct_bit_flips(protected_circuit)
+            if error_type in ['all', 'z']:
+                protected_circuit = self._correct_phase_flips(protected_circuit)
+            if error_type in ['all', 'phase']:
+                protected_circuit = self._correct_phase_errors(protected_circuit)
+
+            # Verify correction quality
+            fidelity = await self._verify_correction(protected_circuit)
+            if fidelity < self.error_threshold:
+                raise QuantumSystemError(f"Correction fidelity too low: {fidelity}")
+
+            logger.info(
+                "Error correction completed",
+                correlation_id=correlation_id,
+                context={"fidelity": fidelity}
+            )
+
+            return protected_circuit
+
+        except Exception as e:
+            logger.error(
+                f"Error correction failed: {str(e)}",
+                correlation_id=correlation_id,
+                exc_info=True
+            )
+            raise QuantumSystemError("Error correction failed")
 
     def _apply_surface_code(self, circuit: QuantumCircuit) -> QuantumCircuit:
-        """Apply surface code error correction"""
-        n_data = circuit.num_qubits
-        n_ancilla = 2 * n_data - 1  # For full surface code
-        
-        corrected = QuantumCircuit(
-            QuantumRegister(n_data + n_ancilla, 'data'),
-            QuantumRegister(n_ancilla, 'syndrome'),
-            ClassicalRegister(n_ancilla, 'measurement')
-        )
-        
-        # Apply stabilizer measurements
-        for i in range(n_data - 1):
-            # X-type stabilizers
-            corrected.h(n_data + i)
-            corrected.cnot(n_data + i, i)
-            corrected.cnot(n_data + i, i + 1)
-            corrected.h(n_data + i)
-            corrected.measure(n_data + i, i)
-            
-            # Z-type stabilizers
-            ancilla_z = n_data + n_data - 1 + i
-            corrected.cnot(i, ancilla_z)
-            corrected.cnot(i + 1, ancilla_z)
-            corrected.measure(ancilla_z, n_data - 1 + i)
-        
-        # Error correction based on syndrome measurements
-        corrected.barrier()
-        for i in range(n_data):
-            corrected.x(i).c_if(i, 1)  # Bit-flip correction
-            corrected.z(i).c_if(n_data - 1 + i, 1)  # Phase-flip correction
-        
-        return corrected
-
-    def _verify_correction(self, circuit: QuantumCircuit) -> float:
-        """Calculate actual fidelity between ideal and noise-corrected states"""
-        # Execute ideal circuit
-        ideal_result = execute(
-            circuit, 
-            self.backend,
-            shots=1000,
-            optimization_level=3
-        ).result()
-        
-        # Execute noisy circuit with correction
-        noisy_result = execute(
-            circuit,
-            self.backend,
-            noise_model=self.noise_model,
-            shots=1000,
-            optimization_level=3
-        ).result()
-        
-        # Calculate state tomography
-        ideal_state = ideal_result.get_statevector()
-        noisy_state = noisy_result.get_statevector()
-        
-        # Compute state fidelity using quantum state tomography
-        fidelity = abs(np.vdot(ideal_state, noisy_state))**2
-        
-        # Additional metrics
-        trace_distance = 0.5 * np.trace(
-            np.abs(ideal_state @ ideal_state.conj().T - 
-                  noisy_state @ noisy_state.conj().T)
-        )
-        
-        self.logger.info(f"Circuit fidelity: {fidelity}")
-        self.logger.info(f"Trace distance: {trace_distance}")
-        
-        return fidelity
-
-    def _calculate_error_syndrome(self, circuit: QuantumCircuit) -> List[int]:
-        """Calculate error syndrome for quantum state correction"""
-        syndrome_circuit = self._build_syndrome_circuit(circuit)
-        result = execute(syndrome_circuit, self.backend).result()
-        return [int(x) for x in list(result.get_counts().keys())[0]]
-
-    def _build_syndrome_circuit(self, data_circuit: QuantumCircuit) -> QuantumCircuit:
-        """Build syndrome measurement circuit for error detection"""
-        num_data_qubits = data_circuit.num_qubits
-        num_syndrome_qubits = num_data_qubits - 1
-        
-        syndrome_circuit = QuantumCircuit(
-            num_data_qubits + num_syndrome_qubits,
-            num_syndrome_qubits
-        )
-        
-        # Add data circuit
-        syndrome_circuit.append(data_circuit, range(num_data_qubits))
-        
-        # Add syndrome measurements
-        for i in range(num_syndrome_qubits):
-            syndrome_circuit.h(num_data_qubits + i)
-            syndrome_circuit.cnot(num_data_qubits + i, i)
-            syndrome_circuit.cnot(num_data_qubits + i, i + 1)
-            syndrome_circuit.h(num_data_qubits + i)
-            syndrome_circuit.measure(num_data_qubits + i, i)
-        
-        return syndrome_circuit
-
-    def _calculate_fidelity(self, circuit: QuantumCircuit) -> float:
-        """Enhanced fidelity calculation with telecom-specific metrics"""
+        """Apply surface code protection"""
         try:
-            # Execute ideal circuit
-            ideal_result = execute(circuit, self.backend, shots=1000).result()
-            ideal_counts = ideal_result.get_counts()
+            # Create encoded circuit using Surface-17 code
+            encoded_circuit = self.surface_code.encode(circuit)
             
-            # Execute noisy circuit
-            noisy_result = execute(
-                circuit,
-                self.backend,
-                noise_model=self.noise_model,
-                shots=1000
-            ).result()
-            noisy_counts = noisy_result.get_counts()
-            
-            # Calculate quantum state fidelity
-            fidelity = sum(
-                min(ideal_counts.get(state, 0), noisy_counts.get(state, 0))
-                for state in set(ideal_counts) | set(noisy_counts)
-            ) / 1000.0
-            
-            # Add telecom-specific metrics
-            latency_impact = self._calculate_latency_impact(circuit)
-            bandwidth_efficiency = self._calculate_bandwidth_efficiency(circuit)
-            
-            # Weight the final fidelity score
-            weighted_fidelity = (
-                0.6 * fidelity +
-                0.2 * latency_impact +
-                0.2 * bandwidth_efficiency
-            )
-            
-            return weighted_fidelity
+            # Add syndrome measurements
+            for _ in range(self.stabilizer_measurements):
+                encoded_circuit.barrier()
+                encoded_circuit = self._measure_stabilizers(encoded_circuit)
+                
+            return encoded_circuit
             
         except Exception as e:
-            self.logger.error(f"Fidelity calculation failed: {e}")
-            return 0.0
+            logger.error(f"Surface code application failed: {str(e)}")
+            raise QuantumSystemError("Failed to apply surface code")
 
-    def _calculate_latency_impact(self, circuit: QuantumCircuit) -> float:
-        """Calculate impact of quantum error correction on network latency"""
-        # Calculate circuit depth impact on latency
-        depth = circuit.depth()
-        gate_time = 1e-6  # 1 microsecond per gate operation
-        
-        # Account for parallel gate operations
-        parallel_factor = 0.7  # 30% reduction due to parallel execution
-        total_latency = depth * gate_time * parallel_factor
-        
-        # Convert to normalized score (0-1)
-        max_acceptable_latency = 1e-3  # 1 millisecond
-        latency_score = 1.0 - min(total_latency / max_acceptable_latency, 1.0)
-        
-        return latency_score
-
-    def _calculate_bandwidth_efficiency(self, circuit: QuantumCircuit) -> float:
-        """Calculate quantum channel bandwidth efficiency"""
-        # Calculate qubit utilization
-        active_qubits = circuit.num_qubits
-        total_gates = sum(1 for inst in circuit.data)
-        
-        # Calculate information density
-        info_density = self._calculate_information_density(circuit)
-        
-        # Calculate error rate based on noise model
-        error_rate = self._estimate_error_rate(circuit)
-        
-        # Compute efficiency score considering multiple factors
-        qubit_efficiency = active_qubits / (active_qubits + circuit.num_clbits)
-        gate_efficiency = min(1.0, total_gates / (2 * active_qubits))
-        
-        # Weight different factors
-        efficiency_score = (
-            0.4 * qubit_efficiency +
-            0.3 * gate_efficiency +
-            0.2 * info_density +
-            0.1 * (1 - error_rate)
-        )
-        
-        return efficiency_score
-
-    def _calculate_information_density(self, circuit: QuantumCircuit) -> float:
-        """Calculate quantum information density of the circuit"""
-        # Count entangling operations
-        entangling_gates = sum(1 for inst in circuit.data if inst.operation.name in ['cx', 'cz', 'swap'])
-        total_gates = len(circuit.data)
-        
-        if total_gates == 0:
-            return 0.0
+    def _measure_stabilizers(self, circuit: QuantumCircuit) -> QuantumCircuit:
+        """Measure stabilizer operators"""
+        try:
+            # Create ancilla registers for measurements
+            anc_x = QuantumRegister(circuit.num_qubits // 2, 'anc_x')
+            anc_z = QuantumRegister(circuit.num_qubits // 2, 'anc_z')
+            c_x = ClassicalRegister(circuit.num_qubits // 2, 'c_x')
+            c_z = ClassicalRegister(circuit.num_qubits // 2, 'c_z')
             
-        # Calculate density score
-        density = entangling_gates / total_gates
-        return min(density * 1.5, 1.0)  # Apply scaling factor
+            # Add registers to circuit
+            circuit.add_register(anc_x)
+            circuit.add_register(anc_z)
+            circuit.add_register(c_x)
+            circuit.add_register(c_z)
+            
+            # Add X-type stabilizer measurements
+            for i, anc in enumerate(range(0, circuit.num_qubits - 1, 2)):
+                circuit.h(anc_x[i])
+                circuit.cx(anc_x[i], i)
+                circuit.cx(anc_x[i], i + 1)
+                circuit.h(anc_x[i])
+                circuit.measure(anc_x[i], c_x[i])
+                
+            # Add Z-type stabilizer measurements
+            for i, anc in enumerate(range(1, circuit.num_qubits - 1, 2)):
+                circuit.h(anc_z[i])
+                circuit.cz(anc_z[i], i)
+                circuit.cz(anc_z[i], i + 1)
+                circuit.h(anc_z[i])
+                circuit.measure(anc_z[i], c_z[i])
+                
+            return circuit
+            
+        except Exception as e:
+            logger.error(f"Stabilizer measurement failed: {str(e)}")
+            raise QuantumSystemError("Failed to measure stabilizers")
 
-    def _estimate_error_rate(self, circuit: QuantumCircuit) -> float:
-        """Estimate error rate based on noise model and circuit complexity"""
-        # Get base error rates from noise model
-        base_error_rate = 0.001  # Base error rate per gate
-        
-        # Account for circuit depth
-        depth = circuit.depth()
-        depth_factor = 1 - np.exp(-depth / 100)  # Exponential scaling with depth
-        
-        # Account for two-qubit gate errors
-        two_qubit_gates = sum(1 for inst in circuit.data if len(inst.qubits) > 1)
-        two_qubit_factor = 1 + (two_qubit_gates / len(circuit.data)) * 0.5
-        
-        # Calculate final error rate
-        error_rate = base_error_rate * depth_factor * two_qubit_factor
-        
-        return min(error_rate, 1.0)
+    def _correct_bit_flips(self, circuit: QuantumCircuit) -> QuantumCircuit:
+        """Correct X (bit-flip) errors"""
+        try:
+            correction_circuit = self.correction_circuits['x_correction']
+            for qubit in range(circuit.num_qubits):
+                circuit.compose(correction_circuit, [qubit], inplace=True)
+            return circuit
+        except Exception as e:
+            logger.error(f"Bit-flip correction failed: {str(e)}")
+            raise QuantumSystemError("Failed to correct bit-flips")
+
+    def _correct_phase_flips(self, circuit: QuantumCircuit) -> QuantumCircuit:
+        """Correct Z (phase-flip) errors"""
+        try:
+            correction_circuit = self.correction_circuits['z_correction']
+            for qubit in range(circuit.num_qubits):
+                circuit.compose(correction_circuit, [qubit], inplace=True)
+            return circuit
+        except Exception as e:
+            logger.error(f"Phase-flip correction failed: {str(e)}")
+            raise QuantumSystemError("Failed to correct phase-flips")
+
+    def _correct_phase_errors(self, circuit: QuantumCircuit) -> QuantumCircuit:
+        """Correct phase errors"""
+        try:
+            correction_circuit = self.correction_circuits['phase_correction']
+            for qubit in range(circuit.num_qubits):
+                circuit.compose(correction_circuit, [qubit], inplace=True)
+            return circuit
+        except Exception as e:
+            logger.error(f"Phase error correction failed: {str(e)}")
+            raise QuantumSystemError("Failed to correct phase errors")
+
+    async def _verify_correction(self, circuit: QuantumCircuit) -> float:
+        """Verify the quality of error correction"""
+        try:
+            # Simulate ideal circuit
+            ideal_result = self._simulate_ideal_circuit(circuit)
+            
+            # Simulate noisy circuit with correction
+            actual_result = self._simulate_noisy_circuit(circuit)
+            
+            # Calculate fidelity between results
+            fidelity = self._calculate_fidelity(ideal_result, actual_result)
+            
+            return fidelity
+            
+        except Exception as e:
+            logger.error(f"Correction verification failed: {str(e)}")
+            raise QuantumSystemError("Failed to verify correction")
+
+    def _simulate_ideal_circuit(self, circuit: QuantumCircuit) -> np.ndarray:
+        """Simulate circuit without noise"""
+        try:
+            backend = Aer.get_backend('statevector_simulator')
+            job = execute(circuit, backend)
+            result = job.result()
+            if result.success:
+                return result.get_statevector()
+            else:
+                raise QuantumSystemError(f"Simulation failed: {result.error}")
+        except Exception as e:
+            logger.error(f"Ideal simulation failed: {str(e)}")
+            raise QuantumSystemError("Failed to simulate ideal circuit")
+
+    def _simulate_noisy_circuit(self, circuit: QuantumCircuit) -> np.ndarray:
+        """Simulate circuit with noise model"""
+        try:
+            backend = Aer.get_backend('qasm_simulator')
+            shots = self.config.get('simulation_shots', 1024)
+            job = execute(circuit,
+                        backend,
+                        noise_model=self.noise_model,
+                        shots=shots,
+                        optimization_level=self.config.get('optimization_level', 1))
+            result = job.result()
+            if result.success:
+                return result.get_counts()
+            else:
+                raise QuantumSystemError(f"Simulation failed: {result.error}")
+        except Exception as e:
+            logger.error(f"Noisy simulation failed: {str(e)}")
+            raise QuantumSystemError("Failed to simulate noisy circuit")
+            
+    def _create_noise_model(self) -> NoiseModel:
+        """Create a realistic noise model for quantum simulation"""
+        try:
+            noise_model = NoiseModel()
+            
+            # Add depolarizing error to all qubits
+            dep_error = depolarizing_error(self.config.get('depolarizing_rate', 0.001), 1)
+            noise_model.add_all_qubit_quantum_error(dep_error, ['u1', 'u2', 'u3'])
+            
+            # Add thermal relaxation
+            t1 = self.config.get('t1', 50000)  # T1 relaxation time (ns)
+            t2 = self.config.get('t2', 70000)  # T2 relaxation time (ns)
+            gate_time = self.config.get('gate_time', 100)  # Gate time (ns)
+            
+            thermal_error = thermal_relaxation_error(t1, t2, gate_time)
+            noise_model.add_all_qubit_quantum_error(thermal_error, ['u1', 'u2', 'u3', 'cx'])
+            
+            return noise_model
+            
+        except Exception as e:
+            logger.error(f"Failed to create noise model: {str(e)}")
+            return NoiseModel()  # Return empty noise model as fallback
+
+    def _calculate_fidelity(self, ideal: np.ndarray, actual: np.ndarray) -> float:
+        """Calculate fidelity between ideal and actual results"""
+        try:
+            # Convert results to density matrices
+            rho_ideal = np.outer(ideal, ideal.conj())
+            rho_actual = self._counts_to_density_matrix(actual)
+            
+            # Calculate fidelity
+            fidelity = np.real(np.trace(
+                scipy.linalg.sqrtm(
+                    scipy.linalg.sqrtm(rho_ideal) @ 
+                    rho_actual @ 
+                    scipy.linalg.sqrtm(rho_ideal)
+                )
+            )**2)
+            
+            return float(fidelity)
+            
+        except Exception as e:
+            logger.error(f"Fidelity calculation failed: {str(e)}")
+            raise QuantumSystemError("Failed to calculate fidelity")

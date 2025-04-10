@@ -1,0 +1,103 @@
+# AstraLink Development Configuration
+# =================================
+# Configuration for local development environment with debugging features enabled
+
+network_stack:
+  3gpp:
+    enabled: true
+    debug_mode: true
+    mock_hardware: true  # Use mock SDR for development
+    amf:
+      capacity: 100  # Limited for development
+      features:
+        - "5G"
+        - "Network Slicing"
+      security:
+        quantum_safe: true
+        encryption: "Kyber-512"  # Faster for development
+
+    smf:
+      upf_selection: "round-robin"
+      session_rules:
+        max_bandwidth: "1Gbps"
+        latency_class: "development"
+
+sdr_interface:
+  hardware:
+    type: "MOCK"  # Mock SDR for development
+    sample_rate: 1000000  # 1 MHz for testing
+    center_freq: 900000000  # 900 MHz
+    gain: 20
+    antenna: "TX/RX"
+  
+  modulation:
+    scheme: "fixed"
+    mode: "QPSK"  # Simpler modulation for testing
+    error_correction: "basic"
+
+satellite:
+  providers:
+    mock_provider:
+      enabled: true
+      mode: "simulation"
+    starlink:
+      enabled: false
+    outernet:
+      enabled: false
+
+blockchain:
+  network: "devnet"
+  chain_id: 22625
+  consensus:
+    type: "PoA"
+    block_time: 1  # 1 second blocks for faster development
+    validators:
+      min: 1
+      max: 3
+  contracts:
+    auto_deploy: true
+    test_tokens: true
+
+quantum:
+  simulation_mode: true  # Use quantum simulator
+  error_correction:
+    enabled: true
+    algorithm: "basic"
+  debug:
+    log_states: true
+    measure_all: true
+
+handshake:
+  domain: "quantum.api.test"
+  local_resolution: true
+  records:
+    - type: "A"
+      name: "dev.quantum.api.test"
+      value: "127.0.0.1"
+
+security:
+  development_mode: true
+  allow_unsafe_operations: true
+  encryption:
+    symmetric: "AES-256-GCM"
+    asymmetric: "Kyber-512"
+  authentication:
+    mock_enabled: true
+
+monitoring:
+  debug_level: "trace"
+  performance_tracking: true
+  metrics:
+    interval: "1s"
+    detailed_logging: true
+  profiling:
+    enabled: true
+    interval: "100ms"
+
+testing:
+  mocked_services:
+    - "hardware_access"
+    - "carrier_api"
+    - "satellite_link"
+  auto_test: true
+  coverage_tracking: true

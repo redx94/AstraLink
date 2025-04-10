@@ -1,0 +1,91 @@
+# Last Modified: Wed Apr 10 15:42:00 2025
+# AppArmor profile for AstraLink blockchain service
+
+#include <tunables/global>
+
+profile astralink-blockchain flags=(attach_disconnected) {
+  #include <abstractions/base>
+  #include <abstractions/python>
+  #include <abstractions/ssl_certs>
+  #include <abstractions/nameservice>
+
+  # Basic capabilities
+  capability net_bind_service,
+  capability sys_resource,
+  capability setgid,
+  capability setuid,
+  
+  # Files and directories
+  /opt/astralink/** r,
+  /opt/astralink/blockchain/** rw,
+  /var/lib/astralink-blockchain/** rw,
+  /var/run/astralink-blockchain/** rw,
+  
+  # Blockchain data storage
+  /var/lib/astralink-blockchain/chain/** rw,
+  /var/lib/astralink-blockchain/state/** rw,
+  /var/lib/astralink-blockchain/keystore/** rw,
+  
+  # Libraries and binaries
+  /usr/bin/python3* ix,
+  /usr/lib/python3/** mr,
+  
+  # Configuration access
+  /etc/astralink/blockchain.env r,
+  /etc/astralink/blockchain/** r,
+  
+  # Logging
+  /var/log/astralink/blockchain/** w,
+  
+  # Network access for P2P and RPC
+  network inet stream,
+  network inet6 stream,
+  network inet dgram,
+  network inet6 dgram,
+  network netlink raw,
+  
+  # Process information
+  owner @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/fd/ r,
+  
+  # Handshake DNS integration
+  /var/run/astralink-handshake/socket rw,
+  
+  # Quantum integration
+  /var/run/astralink-quantum/socket rw,
+  
+  # Deny dangerous access
+  deny /boot/** rwx,
+  deny /etc/shadow rwx,
+  deny @{PROC}/sys/kernel/** wx,
+  deny /sys/kernel/security/** rwx,
+  
+  # Blockchain specific
+  # Allow crypto operations
+  owner /dev/shm/astralink.* rw,
+  
+  # P2P networking
+  /sys/class/net/** r,
+  
+  # IPC with other AstraLink services
+  unix (receive, send) type=stream peer=(label=astralink-quantum),
+  unix (receive, send) type=stream peer=(label=astralink-handshake),
+  
+  # Signal handling
+  signal (receive) peer=astralink-node,
+  signal (send) peer=astralink-handshake,
+  
+  # Allow creation of network sockets
+  network tcp,
+  network udp,
+  
+  # Memory mapped files
+  owner @{PROC}/@{pid}/maps r,
+  owner @{PROC}/@{pid}/numa_maps r,
+  
+  # Blockchain storage performance
+  capability ipc_lock,
+  
+  # State synchronization
+  /sys/kernel/mm/transparent_hugepage/enabled r,
+}

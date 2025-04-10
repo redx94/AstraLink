@@ -1,0 +1,58 @@
+#include <tunables/global>
+
+profile astralink-quantum flags=(attach_disconnected) {
+  #include <abstractions/base>
+  #include <abstractions/python>
+  #include <abstractions/ssl_certs>
+  #include <abstractions/openssl>
+
+  # Basic capabilities
+  capability ipc_lock,
+  capability sys_admin,
+  capability sys_resource,
+
+  # Quantum-specific files and directories
+  /opt/astralink/** r,
+  /opt/astralink/quantum/** rw,
+  /var/lib/astralink-quantum/** rw,
+  /var/run/astralink-quantum/** rw,
+  
+  # Crypto and TPM access
+  /dev/tpm0 rw,
+  /dev/tpmrm0 rw,
+  /dev/crypto rw,
+  /dev/hwrng r,
+  
+  # Libraries and binaries
+  /usr/bin/python3* ix,
+  /usr/lib/python3/** mr,
+  
+  # Configuration access
+  /etc/astralink/quantum.env r,
+  /etc/astralink/quantum/** r,
+  
+  # Logging
+  /var/log/astralink/quantum/** w,
+  
+  # Quantum memory management
+  owner @{PROC}/@{pid}/maps r,
+  owner @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/oom_score_adj w,
+  
+  # Network access (restricted)
+  network inet stream,
+  network inet6 stream,
+  network unix stream,
+  
+  # Deny everything else
+  deny /data/** rwx,
+  deny /home/** rwx,
+  deny /root/** rwx,
+  deny /boot/** rwx,
+  deny /etc/shadow rwx,
+  deny @{PROC}/** rwx,
+  deny @{PROC}/sys/kernel/** rwx,
+  
+  # Required system calls
+  unix (receive, send),
+}

@@ -1,18 +1,103 @@
+"""
+AstraLink - Smart Contract Manager Module
+====================================
+
+This module handles blockchain smart contract operations including service provider
+setup, plan management, service activation, and revenue distribution.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from web3 import Web3
-from typing import Dict, List
+from typing import Dict, List, Optional
 import json
 import asyncio
+import yaml
+from dns import resolver
+from logging_config import get_logger
+from exceptions import NetworkError, ContractError
+
+logger = get_logger(__name__)
 
 class SmartContractManager:
-    def __init__(self, contract_address: str, web3_provider: str):
-        self.web3 = Web3(Web3.HTTPProvider(web3_provider))
-        self.contract_address = contract_address
-        with open('blockchain/contracts/abi/AstraLinkService.json') as f:
-            self.contract_abi = json.load(f)
-        self.contract = self.web3.eth.contract(
-            address=contract_address,
-            abi=self.contract_abi
-        )
+    def __init__(self, contract_address: str = None, web3_provider: str = None):
+        """Initialize with optional params, will load from config if not provided"""
+        self.load_network_config()
+        self.web3 = self._initialize_web3(web3_provider)
+        self.contract_address = contract_address or self.config['smart_contracts']['deployment'][0]['address']
+        self._load_contract()
+        self.dns_resolver = resolver.Resolver()
+        self.dns_resolver.nameservers = self._get_handshake_nameservers()
+        
+    def load_network_config(self):
+        """Load network configuration from YAML"""
+        try:
+            with open('config/blockchain_network.yaml', 'r') as f:
+                self.config = yaml.safe_load(f)
+            logger.info("Loaded network configuration successfully")
+        except Exception as e:
+            logger.error(f"Failed to load network config: {e}")
+            raise NetworkError("Network configuration loading failed")
+
+    def _initialize_web3(self, web3_provider: Optional[str] = None) -> Web3:
+        """Initialize Web3 with fallback to network nodes"""
+        try:
+            if web3_provider:
+                return Web3(Web3.HTTPProvider(web3_provider))
+            
+            # Try connecting to network nodes through Handshake DNS
+            for node in self.config['dns']['bootstrap_nodes']:
+                try:
+                    node_ip = self._resolve_handshake_domain(node)
+                    provider_url = f"http://{node_ip}:8545"
+                    web3 = Web3(Web3.HTTPProvider(provider_url))
+                    if web3.is_connected():
+                        logger.info(f"Connected to network node: {node}")
+                        return web3
+                except Exception as e:
+                    logger.warning(f"Failed to connect to {node}: {e}")
+                    continue
+                    
+            raise NetworkError("Failed to connect to any network nodes")
+            
+        except Exception as e:
+            logger.error(f"Web3 initialization failed: {e}")
+            raise NetworkError(f"Web3 initialization failed: {e}")
+
+    def _resolve_handshake_domain(self, domain: str) -> str:
+        """Resolve Handshake domain to IP address"""
+        try:
+            answers = self.dns_resolver.resolve(domain, 'A')
+            return answers[0].address
+        except Exception as e:
+            logger.error(f"Failed to resolve domain {domain}: {e}")
+            raise NetworkError(f"DNS resolution failed for {domain}")
+
+    def _get_handshake_nameservers(self) -> List[str]:
+        """Get Handshake nameservers for quantum.api"""
+        try:
+            # You would implement actual Handshake nameserver lookup here
+            # For now returning placeholder values
+            return ["127.0.0.1", "::1"]
+        except Exception as e:
+            logger.error(f"Failed to get Handshake nameservers: {e}")
+            return ["8.8.8.8", "8.8.4.4"]  # Fallback to Google DNS
+
+    def _load_contract(self):
+        """Load contract ABI and create contract instance"""
+        try:
+            with open('blockchain/contracts/abi/AstraLinkService.json') as f:
+                self.contract_abi = json.load(f)
+            self.contract = self.web3.eth.contract(
+                address=self.contract_address,
+                abi=self.contract_abi
+            )
+            logger.info("Contract loaded successfully")
+        except Exception as e:
+            logger.error(f"Contract loading failed: {e}")
+            raise ContractError(f"Failed to load contract: {e}")
         
     async def setup_provider(self, provider_address: str, commission_rate: int) -> Dict:
         """Setup new service provider with commission rate"""

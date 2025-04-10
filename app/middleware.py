@@ -1,3 +1,15 @@
+"""
+AstraLink - Middleware Module
+=========================
+
+This module implements FastAPI middleware components for request processing,
+performance monitoring, and metrics collection.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from fastapi import Request
 import time
 import uuid

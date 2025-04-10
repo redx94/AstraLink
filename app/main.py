@@ -1,25 +1,41 @@
+"""
+AstraLink - Main Application Module
+===============================
+
+This module serves as the core FastAPI application entry point, implementing
+the REST API endpoints, middleware, and system-wide exception handling.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from fastapi import FastAPI, HTTPException, Depends, Request, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 import logging
 import time
+import uuid
 from datetime import datetime
 import logging.config
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from .config import get_settings
-from .exceptions import AstraLinkException, QuantumSystemError, AISystemError
+from .exceptions import (
+    AstraLinkException, QuantumSystemError, AISystemError,
+    ValidationError, ResourceExhaustedError, ConfigurationError
+)
 from .models import HealthStatus, AIModelResult
 from .quantum_interface import QuantumSystem
 from .ai_interface import AISystem
-from .logging_config import LOGGING_CONFIG
-import asyncio
+from .logging_config import LOGGING_CONFIG, get_logger
 
 logging.config.dictConfig(LOGGING_CONFIG)
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 api_key_header = APIKeyHeader(name="X-API-Key")
 
 app = FastAPI(title="AstraLink API",
@@ -62,24 +78,44 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 @app.middleware("http")
-async def capture_metrics(request: Request, call_next):
-    request_id = str(uuid.uuid4())
+async def request_middleware(request: Request, call_next):
+    correlation_id = str(uuid.uuid4())
+    request.state.correlation_id = correlation_id
     start_time = time.time()
+    
+    context = {
+        "path": request.url.path,
+        "method": request.method,
+        "client_ip": request.client.host,
+    }
     
     try:
         response = await call_next(request)
         duration = time.time() - start_time
         
-        metrics.observe_request(
-            path=request.url.path,
-            method=request.method,
-            status_code=response.status_code,
-            duration=duration
+        context["duration"] = duration
+        context["status_code"] = response.status_code
+        
+        logger.info(
+            f"Request completed",
+            correlation_id=correlation_id,
+            context=context
         )
         
+        response.headers["X-Correlation-ID"] = correlation_id
         return response
+        
     except Exception as e:
-        logger.error(f"Request {request_id} failed: {str(e)}", exc_info=True)
+        duration = time.time() - start_time
+        context["duration"] = duration
+        context["error"] = str(e)
+        
+        logger.error(
+            f"Request failed",
+            correlation_id=correlation_id,
+            context=context,
+            exc_info=True
+        )
         raise
 
 @app.get("/", response_model=Dict[str, str])
@@ -152,10 +188,53 @@ async def predict_properties(
 
 @app.exception_handler(AstraLinkException)
 async def astralink_exception_handler(request: Request, exc: AstraLinkException):
-    logger.error(f"AstraLink error: {str(exc)}")
-    return {"detail": str(exc)}
+    correlation_id = getattr(request.state, 'correlation_id', str(uuid.uuid4()))
+    
+    error_detail = exc.to_dict()
+    error_detail['correlation_id'] = correlation_id
+    
+    logger.error(
+        f"AstraLink error: {str(exc)}",
+        correlation_id=correlation_id,
+        context=error_detail
+    )
+    
+    return JSONResponse(
+        status_code=determine_status_code(exc),
+        content={"error": error_detail}
+    )
 
 @app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    logger.error(f"Global error handler: {str(exc)}")
-    return {"detail": "Internal server error"}
+async def global_exception_handler(request: Request, exc: Exception):
+    correlation_id = getattr(request.state, 'correlation_id', str(uuid.uuid4()))
+    
+    error_detail = {
+        "error_code": "INTERNAL_ERROR",
+        "message": "An unexpected error occurred",
+        "correlation_id": correlation_id,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    logger.error(
+        f"Unhandled error: {str(exc)}",
+        correlation_id=correlation_id,
+        context={"error_type": type(exc).__name__},
+        exc_info=True
+    )
+    
+    return JSONResponse(
+        status_code=500,
+        content={"error": error_detail}
+    )
+
+def determine_status_code(exc: AstraLinkException) -> int:
+    """Map exception types to HTTP status codes."""
+    status_codes = {
+        ValidationError: 400,
+        QuantumSystemError: 503,
+        AISystemError: 503,
+        ResourceExhaustedError: 429,
+        ConfigurationError: 500
+    }
+    
+    return status_codes.get(type(exc), 500)

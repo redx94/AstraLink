@@ -1,0 +1,102 @@
+# Last Modified: Wed Apr 10 15:43:00 2025
+# AppArmor profile for AstraLink Handshake DNS service
+
+#include <tunables/global>
+
+profile astralink-handshake flags=(attach_disconnected) {
+  #include <abstractions/base>
+  #include <abstractions/python>
+  #include <abstractions/nameservice>
+  #include <abstractions/ssl_certs>
+  #include <abstractions/dns>
+
+  # Basic capabilities
+  capability net_bind_service,
+  capability setgid,
+  capability setuid,
+  capability sys_resource,
+  
+  # DNS server capabilities
+  capability net_admin,
+  capability net_raw,
+  
+  # Files and directories
+  /opt/astralink/** r,
+  /opt/astralink/network/** rw,
+  /var/lib/astralink-handshake/** rw,
+  /var/run/astralink-handshake/** rw,
+  
+  # DNS zone files
+  /var/lib/astralink-handshake/zones/** rw,
+  /etc/bind/** r,
+  
+  # Libraries and binaries
+  /usr/bin/python3* ix,
+  /usr/lib/python3/** mr,
+  /usr/sbin/named ix,
+  
+  # Configuration access
+  /etc/astralink/handshake.env r,
+  /etc/astralink/handshake/** r,
+  
+  # Logging
+  /var/log/astralink/handshake/** w,
+  /var/log/named/** w,
+  
+  # Network access for DNS
+  network inet dgram,
+  network inet6 dgram,
+  network inet stream,
+  network inet6 stream,
+  
+  # Required for DNS operations
+  /etc/hosts r,
+  /etc/resolv.conf r,
+  /etc/hostname r,
+  
+  # Process information
+  owner @{PROC}/@{pid}/status r,
+  owner @{PROC}/@{pid}/net/** r,
+  owner @{PROC}/@{pid}/fd/ r,
+  
+  # Quantum integration
+  /var/run/astralink-quantum/socket rw,
+  
+  # Blockchain integration
+  /var/run/astralink-blockchain/socket rw,
+  
+  # Deny dangerous access
+  deny /boot/** rwx,
+  deny /etc/shadow rwx,
+  deny @{PROC}/sys/kernel/** wx,
+  deny /sys/kernel/security/** rwx,
+  
+  # DNS specific capabilities
+  capability chown,
+  capability dac_override,
+  capability net_bind_service,
+  
+  # Allow binding to privileged ports
+  network tcp,
+  network udp,
+  
+  # IPC with other AstraLink services
+  unix (receive, send) type=stream peer=(label=astralink-blockchain),
+  unix (receive, send) type=stream peer=(label=astralink-quantum),
+  
+  # Signal handling
+  signal (receive) peer=astralink-node,
+  signal (send) peer=astralink-blockchain,
+  
+  # DNS cache
+  owner /var/cache/bind/** rw,
+  /var/cache/bind/ rw,
+  
+  # Handshake-specific files
+  /var/lib/astralink-handshake/hns/** rw,
+  /var/lib/astralink-handshake/keys/** rw,
+  
+  # Allow access to system entropy for DNSSEC
+  /dev/random r,
+  /dev/urandom r,
+}

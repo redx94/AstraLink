@@ -1,3 +1,15 @@
+"""
+AstraLink - Carrier Integration Module
+=================================
+
+This module provides integration with mobile carrier APIs for retrieving data
+plans and processing plan purchases with major carriers.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from typing import Dict, List
 import aiohttp
 import json

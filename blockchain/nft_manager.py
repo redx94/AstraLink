@@ -1,3 +1,15 @@
+"""
+AstraLink - NFT Manager Module
+==========================
+
+This module manages blockchain NFT operations for eSIM tokenization, including
+minting, ownership verification, and IPFS metadata management.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from web3 import Web3
 from eth_account import Account
 from typing import Dict

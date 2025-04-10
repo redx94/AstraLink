@@ -1,3 +1,15 @@
+/**
+ * AstraLink - Material Discovery Module
+ * =================================
+ *
+ * This module implements AI-based material property prediction and analysis,
+ * providing real-time observables for quantum and thermal characteristics.
+ *
+ * Developer: Reece Dixon
+ * Copyright © 2025 AstraLink. All rights reserved.
+ * See LICENSE file for licensing information.
+ */
+
 import { AstraLinkConfig } from '../config/config';
 import { AstraLinkError, ErrorSeverity } from '../core/ErrorHandler';
 import { Observable, BehaviorSubject } from 'rxjs';

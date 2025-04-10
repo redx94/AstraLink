@@ -1,0 +1,43 @@
+[Unit]
+Description=AstraLink Network Node
+After=network.target
+Wants=astralink-blockchain.service astralink-cellular.service astralink-quantum.service astralink-handshake.service
+
+[Service]
+Type=notify
+User=astralink
+Group=astralink
+RuntimeDirectory=astralink
+RuntimeDirectoryMode=0755
+WorkingDirectory=/opt/astralink
+
+# Environment setup
+Environment=NODE_ENV=production
+Environment=QUANTUM_API_DOMAIN=quantum.api
+EnvironmentFile=/etc/astralink/node.env
+
+# Execution
+ExecStartPre=/usr/bin/python3 -m astralink.tools.precheck
+ExecStart=/usr/bin/python3 -m astralink.main
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=300
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+
+# Resource limits
+LimitNOFILE=65535
+LimitMEMLOCK=infinity
+CPUSchedulingPolicy=fifo
+CPUSchedulingPriority=99
+
+[Install]
+WantedBy=multi-user.target

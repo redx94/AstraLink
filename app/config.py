@@ -1,3 +1,15 @@
+"""
+AstraLink - Configuration Module
+============================
+
+This module manages application configuration settings using Pydantic,
+supporting environment variables and .env file loading.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from typing import Optional

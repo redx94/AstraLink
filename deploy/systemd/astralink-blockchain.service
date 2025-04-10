@@ -1,0 +1,96 @@
+[Unit]
+Description=AstraLink Private Blockchain Network
+After=network.target astralink-quantum.service
+Requires=astralink-quantum.service
+Before=astralink-handshake.service
+PartOf=astralink-node.service
+
+[Service]
+Type=notify
+User=astralink
+Group=astralink
+RuntimeDirectory=astralink-blockchain
+RuntimeDirectoryMode=0700
+WorkingDirectory=/opt/astralink
+
+# Environment setup
+Environment=CHAIN_ID=22625
+Environment=NETWORK_NAME=AstraLink_Private_Network
+Environment=CONSENSUS_TYPE=PoA
+Environment=BLOCK_TIME=5
+EnvironmentFile=/etc/astralink/blockchain.env
+
+# Blockchain data directory
+StateDirectory=astralink-blockchain
+StateDirectoryMode=0700
+ConfigurationDirectory=astralink
+ConfigurationDirectoryMode=0700
+
+# Execution
+ExecStartPre=/usr/bin/python3 -m astralink.blockchain.precheck
+ExecStart=/usr/bin/python3 -m astralink.blockchain.node_manager
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+TimeoutStartSec=180
+
+# Resource limits
+MemoryHigh=8G
+MemoryMax=12G
+CPUWeight=80
+CPUQuota=300%
+IOWeight=80
+LimitNOFILE=65535
+LimitNPROC=4096
+
+# Network configuration
+IPAddressAllow=any
+IPAddressDeny=
+RuntimeDirectoryPreserve=yes
+
+# Security settings
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+NoNewPrivileges=true
+SecureBits=keep-caps
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN
+AmbientCapabilities=CAP_NET_BIND_SERVICE CAP_NET_RAW CAP_NET_ADMIN
+
+# Blockchain-specific security
+SystemCallFilter=@system-service @resources @process @io-event @network-io
+SystemCallFilter=~@clock @cpu-emulation @debug @mount @obsolete @privileged @raw-io
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+PrivateNetwork=false
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+# P2P networking
+ReadWritePaths=/opt/astralink/blockchain/data
+ReadWritePaths=/var/lib/astralink-blockchain
+BindPaths=/etc/astralink/blockchain:/etc/astralink/blockchain:ro
+
+# Handshake DNS integration
+Environment=HNS_DOMAIN=quantum.api
+Environment=HNS_BOOTSTRAP_NODES=node1.quantum.api,node2.quantum.api,node3.quantum.api
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astralink-blockchain
+LogRateLimitIntervalSec=30
+LogRateLimitBurst=10000
+
+# Storage configuration
+ReadWritePaths=/var/lib/astralink-blockchain
+ReadWritePaths=/opt/astralink/blockchain/data
+
+[Install]
+WantedBy=astralink-node.service

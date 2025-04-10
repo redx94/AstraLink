@@ -1,0 +1,66 @@
+# AstraLink Private Blockchain Network Configuration
+
+network:
+  name: "AstraLink_Private_Network"
+  chain_id: 22625 # Unique chain ID for our network
+  consensus: "PoA"  # Proof of Authority
+  block_time: 5  # 5 second blocks for fast eSIM operations
+
+dns:
+  domain: "quantum.api"
+  bootstrap_nodes:
+    - "node1.quantum.api"
+    - "node2.quantum.api"
+    - "node3.quantum.api"
+  api_endpoints:
+    - "api.quantum.api"
+    - "rpc.quantum.api"
+
+validators:
+  min_validators: 3
+  max_validators: 7
+  requirements:
+    - "Telecom License"
+    - "Hardware Security Module"
+    - "Quantum-Safe Cryptography Support"
+
+privacy:
+  transaction_privacy: true
+  zk_snarks: true
+  quantum_resistant: true
+  data_encryption: "post-quantum"
+
+smart_contracts:
+  deployment:
+    - name: "ESIMRegistry"
+      address: "0x..."
+    - name: "PrivacyLayer"
+      address: "0x..."
+    - name: "TelecomVerifier"
+      address: "0x..."
+
+handshake_integration:
+  records:
+    - type: "TXT"
+      name: "_blockchain"
+      value: "network=astralink"
+    - type: "SRV"
+      name: "_nodes"
+      target: "bootstrap.quantum.api"
+    - type: "A"
+      name: "api"
+      value: "..."
+
+security:
+  quantum_safe_algorithms:
+    - "Dilithium"  # For digital signatures
+    - "Kyber"      # For key encapsulation
+  firewall_rules:
+    - "Allow P2P: 30303"
+    - "Allow RPC: 8545 (private nodes only)"
+    - "Allow API: 443"
+
+monitoring:
+  metrics_endpoint: "metrics.quantum.api"
+  health_check: "health.quantum.api"
+  alert_webhook: "alerts.quantum.api"

@@ -1,3 +1,15 @@
+/**
+ * AstraLink - Quantum Controller Module
+ * =================================
+ *
+ * This module implements quantum system control including error correction,
+ * surface code operations, and quantum state management with RxJS observables.
+ *
+ * Developer: Reece Dixon
+ * Copyright © 2025 AstraLink. All rights reserved.
+ * See LICENSE file for licensing information.
+ */
+
 import { AstraLinkError, ErrorSeverity } from '../core/ErrorHandler';
 import { Observable, Subject } from 'rxjs';
 

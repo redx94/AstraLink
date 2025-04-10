@@ -1,3 +1,15 @@
+/**
+ * AstraLink - Configuration Module
+ * ============================
+ *
+ * This module defines the configuration interface and default settings for
+ * AI models, quantum systems, and material discovery parameters.
+ *
+ * Developer: Reece Dixon
+ * Copyright © 2025 AstraLink. All rights reserved.
+ * See LICENSE file for licensing information.
+ */
+
 export interface AstraLinkConfig {
     aiSettings: {
         modelEndpoint: string;

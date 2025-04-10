@@ -1,0 +1,137 @@
+# AstraLink Testnet Configuration
+# ==============================
+# Configuration for testnet deployment with real hardware but relaxed security
+
+network_stack:
+  3gpp:
+    enabled: true
+    debug_mode: false
+    mock_hardware: false  # Use real SDR hardware
+    amf:
+      capacity: 10000  # Moderate capacity for testing
+      features:
+        - "5G"
+        - "Network Slicing"
+        - "Edge Computing"
+      security:
+        quantum_safe: true
+        encryption: "Kyber-768"  # Balance of security and performance
+
+    smf:
+      upf_selection: "performance"
+      session_rules:
+        max_bandwidth: "5Gbps"
+        latency_class: "low"
+
+sdr_interface:
+  hardware:
+    type: "USRP"  # Real SDR hardware
+    sample_rate: 10000000  # 10 MHz
+    center_freq: 3500000000  # 3.5 GHz
+    gain: 30
+    antenna: "TX/RX"
+  
+  modulation:
+    scheme: "adaptive"
+    modes:
+      - "QPSK"
+      - "16QAM"
+      - "64QAM"
+    error_correction: "quantum_ldpc"
+
+satellite:
+  providers:
+    starlink:
+      enabled: true
+      test_mode: true  # Use test frequencies
+      frequencies:
+        uplink: "14.0-14.5 GHz"
+        downlink: "10.7-12.7 GHz"
+    outernet:
+      enabled: true
+      mode: "test"
+
+blockchain:
+  network: "testnet"
+  chain_id: 22626
+  consensus:
+    type: "PoA"
+    block_time: 2  # 2 second blocks
+    validators:
+      min: 3
+      max: 5
+  contracts:
+    auto_deploy: true
+    gas_price: "low"
+    test_tokens: true
+  test_features:
+    faucet: true
+    explorer: true
+
+quantum:
+  simulation_mode: false  # Use real quantum hardware
+  error_correction:
+    enabled: true
+    algorithm: "surface_code"
+    threshold: 0.01
+  test_features:
+    state_verification: true
+    error_injection: true
+
+handshake:
+  domain: "test.quantum.api"
+  records:
+    - type: "A"
+      name: "testnet.quantum.api"
+      value: "${TEST_NODE_IP}"
+    - type: "SRV"
+      name: "_blockchain._tcp.testnet.quantum.api"
+      target: "chain.testnet.quantum.api"
+    - type: "SRV"
+      name: "_api._tcp.testnet.quantum.api"
+      target: "api.testnet.quantum.api"
+
+security:
+  development_mode: false
+  allow_unsafe_operations: false
+  encryption:
+    symmetric: "AES-256-GCM"
+    asymmetric: "Kyber-768"
+  authentication:
+    method: "quantum_challenge_response"
+    test_keys_allowed: true
+
+monitoring:
+  debug_level: "debug"
+  performance_tracking: true
+  metrics:
+    collection_interval: "5s"
+    storage_duration: "7d"
+    quantum_metrics:
+      - "decoherence_rate"
+      - "error_correction_success"
+      - "entanglement_fidelity"
+    network_metrics:
+      - "bandwidth_usage"
+      - "latency"
+      - "packet_loss"
+      - "error_rate"
+  alerts:
+    error_rate_threshold: 0.05  # More lenient for testnet
+    latency_threshold: "50ms"
+    quantum_error_threshold: 0.01
+
+testing:
+  enabled: true
+  chaos_testing: true
+  features:
+    - "fault_injection"
+    - "network_partition"
+    - "latency_simulation"
+  monitoring:
+    enhanced_logging: true
+    performance_profiling: true
+  load_testing:
+    enabled: true
+    max_users: 1000
+    max_transactions: 10000

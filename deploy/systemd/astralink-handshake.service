@@ -1,0 +1,93 @@
+[Unit]
+Description=AstraLink Handshake DNS Integration
+After=network.target astralink-blockchain.service
+Requires=astralink-blockchain.service
+PartOf=astralink-node.service
+
+[Service]
+Type=notify
+User=astralink
+Group=astralink
+RuntimeDirectory=astralink-handshake
+RuntimeDirectoryMode=0700
+WorkingDirectory=/opt/astralink
+
+# Environment setup
+Environment=HNS_DOMAIN=quantum.api
+Environment=HNS_NETWORK=mainnet
+Environment=DNS_PORT=53
+Environment=API_PORT=443
+EnvironmentFile=/etc/astralink/handshake.env
+
+# DNS service configuration
+StateDirectory=astralink-handshake
+StateDirectoryMode=0700
+ConfigurationDirectory=astralink-handshake
+ConfigurationDirectoryMode=0700
+
+# Execution
+ExecStartPre=/usr/bin/python3 -m astralink.network.handshake_init
+ExecStart=/usr/bin/python3 -m astralink.network.handshake_integration
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+TimeoutStartSec=60
+
+# Resource limits
+MemoryHigh=2G
+MemoryMax=4G
+CPUWeight=60
+CPUQuota=200%
+IOWeight=60
+LimitNOFILE=65535
+
+# Network configuration
+# Allow DNS (53) and HTTPS (443) ports
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+IPAddressAllow=any
+RuntimeDirectoryPreserve=yes
+
+# Security settings
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+NoNewPrivileges=true
+
+# DNS-specific security
+SystemCallFilter=@system-service @resources @process @io-event @network-io
+SystemCallFilter=~@clock @cpu-emulation @debug @mount @obsolete @privileged @raw-io
+SystemCallArchitectures=native
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+PrivateNetwork=false
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+# Domain configuration
+ReadWritePaths=/var/lib/astralink-handshake
+ReadWritePaths=/etc/astralink-handshake
+BindPaths=/etc/astralink/handshake:/etc/astralink/handshake:ro
+
+# Service discovery paths
+ReadWritePaths=/var/run/astralink-handshake
+ReadWritePaths=/var/lib/astralink-handshake/zones
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=astralink-handshake
+LogRateLimitIntervalSec=30
+LogRateLimitBurst=1000
+
+# DNS Records Update
+ExecStartPost=/usr/bin/python3 -m astralink.network.dns_setup
+ExecStartPost=/usr/bin/python3 -m astralink.network.service_discovery
+
+[Install]
+WantedBy=astralink-node.service

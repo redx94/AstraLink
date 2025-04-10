@@ -1,3 +1,15 @@
+"""
+AstraLink - AI System Interface Module
+==================================
+
+This module provides the interface for AI model integrations and predictions,
+handling material property analysis and system health monitoring.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from .exceptions import AISystemError
 from .models import AIModelResult
 import logging

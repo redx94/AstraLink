@@ -1,3 +1,15 @@
+"""
+AstraLink - Network Optimizer Module
+================================
+
+This module implements AI-based network optimization including slice management,
+congestion prediction, and handover sequence optimization using deep learning.
+
+Developer: Reece Dixon
+Copyright © 2025 AstraLink. All rights reserved.
+See LICENSE file for licensing information.
+"""
+
 from typing import Dict, List, Tuple
 import tensorflow as tf
 import numpy as np
