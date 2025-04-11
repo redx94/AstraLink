@@ -4,87 +4,140 @@
 
 ---
 
-## License Type
+## License Agreement
+
+**IMPORTANT: READ CAREFULLY BEFORE USING OR DISTRIBUTING ASTRALINK.**
+
+This document constitutes a legally binding agreement between you (the "Licensee" or "User") and Reece Dixon (the "Licensor" or "Author") regarding the use of the AstraLink software (the "Software"). By using, copying, modifying, or distributing the Software, you agree to be bound by the terms and conditions of this License.
+
+---
+
+## 1. License Types
+
 AstraLink is licensed under a Hybrid Open-Source & Commercial License:
-- **Core Components:** Licensed under the Apache 2.0 License (Open-Source).
-- **AI & Advanced Features:** Licensed under the Business Source License (BSL).
-- **Enterprise Deployment:** Requires a separate Commercial License.
+
+* **1.1 Core Components:** The core components of AstraLink are licensed under the Apache License 2.0, the full text of which is available at [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0). Your use of these components is governed by the terms and conditions of the Apache License 2.0.
+
+* **1.2 AI & Advanced Features:** The AI and advanced features of AstraLink are licensed under the Business Source License 1.1 ("BSL"), the full text of which is available at [https://opensource.org/licenses/BSL-1.1](https://opensource.org/licenses/BSL-1.1). Initially, these features are subject to the terms outlined in Section 3 (Commercial Use & Monetization) and Section 4 (Specific Terms for Commercial Use) of this License. After the Change Date as defined in the BSL, the licensing of these features may revert to an open-source license as specified in a future version of this License.
+
+* **1.3 Enterprise Deployment:** Deployment of AstraLink in an enterprise environment, as defined in Section 3, requires a separate Commercial License Agreement directly with the Author.
 
 ---
 
-## Terms of Use
+## 2. Terms of Use
+
 Permission is granted to use and modify AstraLink under the following conditions:
-- **Attribution:** Proper credit must be given to the original author (Reece Dixon).
-- **Ethical Use:** AstraLink **must not** be used for illegal, unethical, or malicious purposes, including but not limited to fraud, unauthorized surveillance, or any activity that violates telecom regulations.
-- **No Unauthorized Commercialization:** Users may not resell, repackage, or license AstraLink without explicit written authorization from the author.
+
+* **2.1 Attribution:** You must give proper credit to the original author, Reece Dixon, in all copies or substantial portions of the Software. This includes retaining copyright notices and providing clear attribution in documentation and any derivative works.
+
+* **2.2 Ethical Use:** You **must not** use AstraLink for illegal, unethical, or malicious purposes. This includes, but is not limited to, fraud, unauthorized surveillance, the development or deployment of tools for illegal activities, or any activity that violates applicable telecom regulations.
+
+* **2.3 No Unauthorized Commercialization:** You may not resell, repackage, sublicense, or distribute AstraLink for commercial gain without explicit written authorization from the Author, except as permitted under a valid Commercial License Agreement.
 
 ---
 
-## Commercial Use & Monetization
-- The **Pro Tier** is intended for individual developers or small teams (up to 10 users).
-- The **Enterprise Tier** is required for businesses or institutions with 11 or more users or those requiring full-scale deployment.
-- **Redistribution of AstraLink in a closed-source product requires an Enterprise License.**
-- A **custom licensing agreement** is required for organizations exceeding 1,000 users.
-- Users may not create derivative products and monetize them without explicit written approval from the author.
+## 3. Commercial Use & Monetization
+
+Commercial use and monetization of AstraLink are subject to the following terms:
+
+* **3.1 Pro Tier:** The "Pro Tier" is intended for individual developers or small teams with up to ten (10) users. Use within this tier may be subject to specific terms outlined in a separate agreement or communicated by the Author.
+
+* **3.2 Enterprise Tier:** The "Enterprise Tier" is required for businesses or institutions with eleven (11) or more users or those requiring full-scale deployment for commercial purposes. Use within this tier necessitates a separate Commercial License Agreement.
+
+* **3.3 Redistribution in Closed-Source Products:** Redistribution of AstraLink, or its components (excluding those solely licensed under Apache 2.0 when used independently), within a closed-source product requires an Enterprise License obtained directly from the Author.
+
+* **3.4 Large-Scale Organizations:** Organizations exceeding one thousand (1,000) users require a custom licensing agreement negotiated directly with the Author.
+
+* **3.5 Derivative Products:** You may not create derivative products based on AstraLink and monetize them without explicit written approval from the Author and a separate licensing agreement.
 
 ---
 
-## Specific Terms for Commercial Use
-- **Conditions**: Commercial use is permitted only under the following conditions:
-  - Users must obtain a commercial license from the author.
-  - Users must comply with all terms and conditions specified in the commercial license agreement.
-- **Fees**: Commercial users are required to pay fees as specified in the commercial license agreement. These fees may include:
-  - Licensing fees
-  - Royalties
-  - Revenue-sharing arrangements
-- **Permitted Activities**: The following commercial activities are permitted under a commercial license:
-  - Reselling
-  - Sublicensing
-  - Integrating the software into proprietary products
-- **Auditing**: The author reserves the right to audit commercial users to ensure compliance with the commercial terms.
-- **Enforcement**: The author may take legal action against commercial users who violate the terms of the commercial license agreement.
-- **Obtaining a Commercial License**: To obtain a commercial license, users must contact the author at `quantum.apii@gmail.com` and provide the required documentation.
-- **Liability**: Commercial users agree to indemnify and hold the author harmless from any damages or losses resulting from commercial use.
-- **Indemnification**: Commercial users agree to indemnify the author against any claims, damages, or liabilities arising from their use of the software.
-- **Termination**: The author reserves the right to terminate the commercial license if the terms are violated.
+## 4. Specific Terms for Commercial Use
+
+Commercial use of AstraLink is permitted only under the following conditions:
+
+* **4.1 Obtaining a Commercial License:** Users intending commercial use must obtain a commercial license directly from the Author. Contact `quantum.apii@gmail.com` to inquire about commercial licensing terms and procedures.
+
+* **4.2 Compliance with Agreement:** Commercial use is contingent upon full compliance with all terms and conditions specified in the separate Commercial License Agreement.
+
+* **4.3 Fees:** Commercial users are required to pay fees as stipulated in the Commercial License Agreement. These fees may include, but are not limited to:
+    * Licensing fees
+    * Royalties
+    * Revenue-sharing arrangements
+
+* **4.4 Permitted Activities (under Commercial License):** Subject to the terms of the Commercial License Agreement, permitted commercial activities may include:
+    * Reselling the Software as part of a larger offering.
+    * Sublicensing the Software to end-users.
+    * Integrating the Software into proprietary products for commercial distribution.
+
+* **4.5 Auditing:** The Author reserves the right to audit commercial users' usage of the Software to ensure compliance with the terms of the Commercial License Agreement.
+
+* **4.6 Enforcement:** The Author reserves the right to take legal action against commercial users who violate the terms of the Commercial License Agreement.
+
+* **4.7 Required Documentation:** To obtain a commercial license, users must contact the Author at `quantum.apii@gmail.com` and provide all necessary documentation as requested by the Author.
+
+* **4.8 Liability (Commercial Users):** Commercial users agree to indemnify and hold the Author harmless from any damages, losses, or liabilities arising from their commercial use of the Software.
+
+* **4.9 Indemnification (Commercial Users):** Commercial users agree to indemnify the Author against any claims, damages, or liabilities arising from their use of the Software, including but not limited to claims related to their commercial activities.
+
+* **4.10 Termination (Commercial License):** The Author reserves the right to terminate the Commercial License Agreement if the terms of the agreement are violated.
 
 ---
 
-## Telecom Regulation Compliance
-- **Regulatory Compliance**: Users must comply with all applicable telecom regulations and obtain any necessary licenses or approvals from relevant authorities.
-- **Liability Disclaimer**: The author is not liable for any regulatory violations or penalties incurred by users.
-- **Indemnification**: Users agree to indemnify the author against any claims, damages, or liabilities arising from regulatory violations.
-- **Detailed Telecom Regulations**: Users must adhere to the following detailed telecom regulations:
-  - **Spectrum Usage**: Users must ensure that their use of the spectrum complies with all relevant regulations and does not interfere with other users.
-  - **Data Privacy**: Users must implement appropriate measures to protect the privacy and security of user data in accordance with applicable laws and regulations.
-  - **Service Quality**: Users must maintain a high level of service quality and reliability, and promptly address any issues or complaints from users.
-  - **Emergency Services**: Users must ensure that their services are compatible with emergency services and provide accurate location information when required.
-  - **Interconnection**: Users must facilitate interconnection with other telecom networks and services to ensure seamless communication for users.
-  - **Reporting**: Users must regularly report their compliance with telecom regulations to the relevant authorities and provide any requested information or documentation.
+## 5. Telecom Regulation Compliance
+
+* **5.1 Regulatory Compliance:** You are solely responsible for complying with all applicable telecom regulations, laws, and standards in your jurisdiction(s) when using or deploying AstraLink. You must obtain any necessary licenses, permits, or approvals from relevant authorities.
+
+* **5.2 Liability Disclaimer:** The Author shall not be held liable for any regulatory violations, penalties, fines, or legal consequences incurred by you as a result of your use or deployment of AstraLink.
+
+* **5.3 Indemnification:** You agree to indemnify and hold the Author harmless from any claims, damages, losses, or liabilities arising from your failure to comply with applicable telecom regulations.
+
+* **5.4 Detailed Telecom Regulations:** You acknowledge and agree to adhere to the following detailed telecom regulations (this list is not exhaustive and serves as an example of the responsibilities):
+    * **5.4.1 Spectrum Usage:** Ensure that your use of the radio frequency spectrum complies with all relevant regulations and does not cause harmful interference to other authorized users.
+    * **5.4.2 Data Privacy:** Implement and maintain appropriate technical and organizational measures to protect the privacy and security of user data in accordance with applicable data protection laws and regulations.
+    * **5.4.3 Service Quality:** Maintain a high level of service quality and reliability, and promptly address any service disruptions or user complaints in accordance with regulatory requirements.
+    * **5.4.4 Emergency Services:** Ensure that your services are compatible with emergency services and provide accurate location information when required by law.
+    * **5.4.5 Interconnection:** Facilitate interconnection with other telecom networks and services as mandated by regulatory authorities to ensure seamless communication for users.
+    * **5.4.6 Reporting:** Regularly report your compliance with telecom regulations to the relevant authorities and provide any requested information or documentation in a timely and accurate manner.
 
 ---
 
-## Liability & Security Disclaimer
-- AstraLink is provided **"as is"**, with no guarantees on uptime, security, or regulatory compliance.
-- The author is **not liable** for financial losses, smart contract vulnerabilities, third-party breaches, or any damages resulting from the use of AstraLink.
-- Users deploy AstraLink **at their own risk**, with an understanding of decentralized network limitations and the complexities of telecom regulations.
-- No claims can be made against the author for direct, indirect, or consequential damages arising from the use of AstraLink.
-- The author is not liable for any damages or losses resulting from user negligence, misuse, or failure to comply with the terms and conditions.
+## 6. Liability & Security Disclaimer
+
+* **6.1 "As Is" Provision:** AstraLink is provided **"as is"**, without any warranties or guarantees of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, uptime, security, or regulatory compliance.
+
+* **6.2 No Liability:** The Author shall not be liable for any financial losses, smart contract vulnerabilities, security breaches, data loss, business interruption, third-party breaches, or any direct, indirect, incidental, special, consequential, or punitive damages arising out of or in any way connected with the use or inability to use AstraLink, even if the Author has been advised of the possibility of such damages.
+
+* **6.3 Assumption of Risk:** You acknowledge and agree that you deploy and use AstraLink **at your own risk**, with a full understanding of the inherent limitations of decentralized networks, the complexities of telecom regulations, and potential security vulnerabilities.
+
+* **6.4 No Claims Against Author:** You agree that no claims can be made against the Author for any direct, indirect, or consequential damages resulting from the use of AstraLink.
+
+* **6.5 User Responsibility:** The Author is not liable for any damages or losses resulting from your negligence, misuse of the Software, or failure to comply with the terms and conditions of this License or applicable laws and regulations.
 
 ---
 
-## Enforcement & Legal Compliance
-- Violation of these terms **may result in legal action.**
-- Any disputes shall be resolved under the jurisdiction of **United States Federal Law**.
-- Users agree to abide by all applicable local, national, and international laws when deploying AstraLink.
+## 7. Enforcement & Legal Compliance
+
+* **7.1 Legal Action:** Violation of any of the terms and conditions of this License may result in legal action by the Author to protect their rights and intellectual property.
+
+* **7.2 Governing Law & Jurisdiction:** Any disputes arising out of or relating to this License shall be governed by and construed in accordance with the laws of the **United States Federal Law**, without regard to its conflict of law principles. You hereby consent to the exclusive jurisdiction and venue of the federal courts located in the **State of Indiana** for the resolution of any such disputes.
+
+* **7.3 Compliance with Laws:** You agree to abide by all applicable local, national, and international laws and regulations when deploying or using AstraLink.
 
 ---
 
-## Terms and Conditions
-- Users must agree to the Terms and Conditions specified by the author. The Terms and Conditions will be provided separately and must be reviewed and accepted by users before using AstraLink.
+## 8. Terms and Conditions
+
+* **8.1 Separate Agreement:** Your use of AstraLink may be subject to additional Terms and Conditions specified by the Author in a separate document or agreement. You are responsible for reviewing and accepting these additional Terms and Conditions before using the Software. In the event of a conflict between this License and any separate Terms and Conditions, the separate Terms and Conditions shall prevail with respect to the specific subject matter thereof.
 
 ---
 
-For licensing inquiries or commercial agreements, contact **quantum.apii@gmail.com**.
+## 9. Contact Information
+
+For licensing inquiries, commercial agreements, or any questions regarding this License, please contact:
+
+**quantum.apii@gmail.com**
 
 ---
+
+**By using AstraLink, you acknowledge that you have read, understood, and agree to be bound by the terms and conditions of this License Agreement.**
