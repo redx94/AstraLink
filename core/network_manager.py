@@ -114,13 +114,16 @@ class NetworkManager:
         timestamp = int(time.time())
         
         print(f"[NetworkManager] Establishing connection {connection_id}")
+        print(f"[NetworkManager] DEBUG: Allocation details: {allocation}")
+        print(f"[NetworkManager] DEBUG: Secure channels: {secure_channels}")
         
         self.active_connections[connection_id] = {
             "allocation": allocation,
             "secure_channels": secure_channels,
             "status": "active",
             "created_at": timestamp,
-            "last_active": timestamp
+            "last_active": timestamp,
+            "latency": allocation.get("latency_estimates", {}).get("avg_latency", 0)
         }
         
         # Cleanup stale connections
@@ -132,6 +135,9 @@ class NetworkManager:
     async def _cleanup_stale_connections(self, max_idle_time: int = 3600):
         """Remove connections that have been idle for too long"""
         current_time = int(time.time())
+        
+        print("[NetworkManager] DEBUG: Starting connection cleanup")
+        print(f"[NetworkManager] DEBUG: Current active connections: {len(self.active_connections)}")
         
         stale_connections = [
             conn_id for conn_id, conn in self.active_connections.items()

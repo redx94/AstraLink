@@ -300,6 +300,12 @@ class QuantumSecureBandwidthMarketplace:
         """Initialize quantum-secure communication channels"""
         try:
             print("[BandwidthMarketplace] Setting up quantum channels...")
+            print(f"[BandwidthMarketplace] DEBUG: Allocation details: {allocation}")
+            print(f"[BandwidthMarketplace] DEBUG: Using encryption scheme: {encryption_scheme}")
+            
+            if not allocation:
+                print("[BandwidthMarketplace] WARNING: Empty allocation provided")
+                allocation = {}
             
             # Perform resource cleanup before establishing new channels
             await self._periodic_cleanup()
@@ -307,10 +313,12 @@ class QuantumSecureBandwidthMarketplace:
             # Implement quantum key distribution
             qkd_keys = await self.quantum_system.generate_keys()
             print("[BandwidthMarketplace] Generated quantum keys")
+            print(f"[BandwidthMarketplace] DEBUG: QKD key details: {qkd_keys}")
             
             # Setup quantum-resistant encryption
             encryption_params = await self._setup_post_quantum_encryption()
             print("[BandwidthMarketplace] Established quantum-resistant encryption")
+            print(f"[BandwidthMarketplace] DEBUG: Encryption parameters: {encryption_params}")
             
             channel_id = str(uuid.uuid4())
             result = {
