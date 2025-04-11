@@ -157,10 +157,10 @@ Please ensure all code:
 - Maintains backward compatibility
 
 ## License
-MIT License - See [LICENSE](LICENSE) for details.
+See [LICENSE](LICENSE) for details.
 
 ## Contact
 **Core Team**
 - Email: quantum.apii@gmail.com
 - GitHub Issues: https://github.com/redx94/AstraLink/issues
-- Discord: [Join our Server](https://discord.gg/astralink)
+
