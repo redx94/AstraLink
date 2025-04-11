@@ -1,0 +1,120 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+rule_files:
+  - "rules/*.yml"
+
+scrape_configs:
+  - job_name: 'astralink_api'
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['astralink_api:8000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '(.*):.*'
+        replacement: '${1}'
+
+  - job_name: 'quantum_system'
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['quantum_system:9000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '(.*):.*'
+        replacement: '${1}'
+
+  - job_name: 'node_exporter'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['node_exporter:9100']
+
+  - job_name: 'cadvisor'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+alerting_rules:
+  groups:
+    - name: astralink_alerts
+      rules:
+        - alert: HighLatency
+          expr: http_request_duration_seconds > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: High latency detected
+            description: "Service latency is above 500ms"
+
+        - alert: HighErrorRate
+          expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.01
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: High error rate detected
+            description: "Error rate is above 1%"
+
+        - alert: QuantumSystemFailure
+          expr: quantum_system_health < 1
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: Quantum system failure detected
+            description: "Quantum system is not functioning properly"
+
+        - alert: NodeDown
+          expr: up == 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Node is down
+            description: "{{ $labels.instance }} has been down for more than 5 minutes"
+
+        - alert: HighMemoryUsage
+          expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: High memory usage
+            description: "Container memory usage is above 85%"
+
+        - alert: HighCPUUsage
+          expr: (rate(container_cpu_usage_seconds_total[5m]) / container_spec_cpu_quota) > 0.85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: High CPU usage
+            description: "Container CPU usage is above 85%"
+
+recording_rules:
+  groups:
+    - name: astralink_metrics
+      interval: 1m
+      rules:
+        - record: job:request_latency_seconds:mean5m
+          expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m])
+
+        - record: job:request_errors:ratio5m
+          expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])
+
+        - record: job:quantum_operations:success_ratio5m
+          expr: rate(quantum_operations_total{status="success"}[5m]) / rate(quantum_operations_total[5m])
+
+        - record: job:network_bandwidth:utilization5m
+          expr: sum(rate(network_bytes_total[5m])) by (instance)

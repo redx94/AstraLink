@@ -4,6 +4,26 @@ import uuid
 from typing import Dict, List, Optional, Any
 from quantum.quantum_controller import QuantumController
 from network.bandwidth_marketplace import QuantumSecureBandwidthMarketplace
+from app.security import security_manager
+from app.high_availability import ha_manager, NodeState
+from app.logging_config import StructuredLogger, MetricsCollector
+from functools import wraps
+import backoff
+
+def with_retry(max_tries=3, max_time=30):
+    """Decorator for retry logic with exponential backoff"""
+    def decorator(func):
+        @wraps(func)
+        @backoff.on_exception(
+            backoff.expo,
+            (Exception,),
+            max_tries=max_tries,
+            max_time=max_time
+        )
+        async def wrapper(*args, **kwargs):
+            return await func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 class NetworkManager:
     """Manages quantum-classical hybrid network operations"""
@@ -14,6 +34,9 @@ class NetworkManager:
         self.qos_metrics = {}
         self.last_maintenance = 0
         self.maintenance_interval = 300  # 5 minutes
+        self.logger = StructuredLogger("NetworkManager")
+        self.metrics = MetricsCollector()
+        self.logger.info("Network manager initialized")
 
     async def start_maintenance_loop(self):
         """Start periodic maintenance tasks"""
@@ -22,7 +45,8 @@ class NetworkManager:
                 await self._perform_maintenance()
                 await asyncio.sleep(60)  # Check every minute
             except Exception as e:
-                print(f"[NetworkManager] ERROR: Maintenance loop error: {str(e)}")
+                self.logger.error("Maintenance loop error", error=str(e))
+                self.metrics.record_metric("maintenance_failure", True, {"error": str(e)})
                 await asyncio.sleep(5)  # Brief pause on error
 
     async def _perform_maintenance(self):
@@ -32,9 +56,11 @@ class NetworkManager:
         if current_time - self.last_maintenance < self.maintenance_interval:
             return
             
-        print("[NetworkManager] Starting periodic maintenance...")
+        self.logger.info("Starting periodic maintenance")
         
         try:
+            start_time = time.time()
+            
             # Clean up stale connections
             await self._cleanup_stale_connections()
             
@@ -44,93 +70,223 @@ class NetworkManager:
             # Update QoS metrics
             self.qos_metrics = await self._calculate_current_qos()
             
-            print("[NetworkManager] Periodic maintenance completed successfully")
+            duration = time.time() - start_time
+            self.metrics.record_metric("maintenance_duration", duration)
+            self.metrics.record_metric("maintenance_success", True)
+            
+            self.logger.info("Periodic maintenance completed",
+                           duration=duration,
+                           active_connections=len(self.active_connections))
             self.last_maintenance = current_time
             
         except Exception as e:
-            print(f"[NetworkManager] ERROR: Maintenance failed: {str(e)}")
+            self.logger.error("Maintenance failed", error=str(e))
+            self.metrics.record_metric("maintenance_failure", True, {"error": str(e)})
 
     async def initialize_network(self):
         """Initialize quantum-classical hybrid network"""
         try:
-            print("[NetworkManager] Starting network initialization...")
+            self.logger.info("Starting network initialization")
+            start_time = time.time()
             
             # Start maintenance loop in background
             asyncio.create_task(self.start_maintenance_loop())
             
-            # Initialize quantum subsystem
+            # Initialize quantum subsystem with retry
             try:
-                await self.quantum_controller.initializeQuantumSystem()
-                print("[NetworkManager] Quantum system initialized successfully")
+                await self._init_quantum_system()
+                self.logger.info("Quantum system initialized successfully")
             except Exception as e:
-                print(f"[NetworkManager] ERROR: Quantum system initialization failed: {str(e)}")
+                self.logger.error("Quantum system initialization failed", error=str(e))
+                self.metrics.record_metric("quantum_init_failure", True, {"error": str(e)})
                 raise
             
-            # Setup secure channels
+            # Setup secure channels with retry
             try:
-                quantum_channels = await self.bandwidth_marketplace._setup_quantum_channels(
-                    allocation={},
-                    encryption_scheme="post-quantum"
-                )
-                print("[NetworkManager] Secure channels established")
+                quantum_channels = await self._setup_secure_channels()
+                self.logger.info("Secure channels established")
             except Exception as e:
-                print(f"[NetworkManager] ERROR: Failed to setup secure channels: {str(e)}")
+                self.logger.error("Failed to setup secure channels", error=str(e))
+                self.metrics.record_metric("secure_channels_failure", True, {"error": str(e)})
                 raise
             
-            # Initialize QoS monitoring
+            # Initialize QoS monitoring with retry
             try:
-                self.qos_metrics = await self._initialize_qos_monitoring()
-                print("[NetworkManager] QoS monitoring initialized")
+                self.qos_metrics = await self._init_qos_monitoring()
+                self.logger.info("QoS monitoring initialized")
             except Exception as e:
-                print(f"[NetworkManager] ERROR: QoS monitoring initialization failed: {str(e)}")
+                self.logger.error("QoS monitoring initialization failed", error=str(e))
+                self.metrics.record_metric("qos_init_failure", True, {"error": str(e)})
                 raise
             
-            print("[NetworkManager] Network initialization completed successfully")
+            duration = time.time() - start_time
+            self.metrics.record_metric("network_init_duration", duration)
+            self.metrics.record_metric("network_init_success", True)
+            
+            self.logger.info("Network initialization completed",
+                           duration=duration,
+                           quantum_ready=True)
+            
             return {
                 "status": "initialized",
                 "quantum_ready": True,
                 "secure_channels": quantum_channels,
-                "qos_status": self.qos_metrics
+                "qos_status": self.qos_metrics,
+                "initialization_time": duration
             }
         except Exception as e:
-            print(f"[NetworkManager] CRITICAL: Network initialization failed: {str(e)}")
+            self.logger.critical("Network initialization failed", error=str(e))
+            self.metrics.record_metric("network_init_failure", True, {"error": str(e)})
             raise
+
+    @with_retry(max_tries=3, max_time=30)
+    async def _init_quantum_system(self):
+        """Initialize quantum subsystem with retry"""
+        return await self.quantum_controller.initializeQuantumSystem()
+
+    @with_retry(max_tries=3, max_time=30)
+    async def _setup_secure_channels(self):
+        """Setup secure channels with retry"""
+        return await self.bandwidth_marketplace._setup_quantum_channels(
+            allocation={},
+            encryption_scheme="post-quantum"
+        )
+
+    @with_retry(max_tries=3, max_time=30)
+    async def _init_qos_monitoring(self):
+        """Initialize QoS monitoring with retry"""
+        return await self._initialize_qos_monitoring()
     
     async def allocate_bandwidth(self, request: Dict):
-        """Allocate network bandwidth with quantum security"""
-        optimization_result = await self.bandwidth_marketplace.optimize_network_allocation([request])
-        
-        if optimization_result["qos_metrics"]["reliability"] >= 0.99999:
-            await self._establish_connection(
-                optimization_result["allocations"],
-                optimization_result["quantum_secure_channels"]
+        """Allocate network bandwidth with quantum security and HA support"""
+        try:
+            # Encrypt sensitive request data
+            encrypted_request = await security_manager.encrypt_data(str(request))
+            
+            # Check if we're the leader
+            if ha_manager.current_role != NodeRole.LEADER:
+                self.logger.warning(
+                    "Bandwidth allocation request on non-leader node",
+                    node_role=str(ha_manager.current_role)
+                )
+                if ha_manager.current_leader:
+                    # TODO: Forward request to leader
+                    self.logger.info("Forwarding request to leader node",
+                                   leader=ha_manager.current_leader)
+                    raise NotImplementedError("Request forwarding not yet implemented")
+                else:
+                    raise ValueError("No leader available for bandwidth allocation")
+            
+            # Record metrics before optimization
+            self.metrics.record_metric("bandwidth_request", {
+                "requested": request.get("bandwidth", 0),
+                "timestamp": time.time()
+            })
+            
+            # Optimize allocation with quantum security
+            optimization_result = await self.bandwidth_marketplace.optimize_network_allocation([request])
+            
+            if optimization_result["qos_metrics"]["reliability"] >= 0.99999:
+                # Establish connection with audit logging
+                connection_id = await self._establish_connection(
+                    optimization_result["allocations"],
+                    optimization_result["quantum_secure_channels"]
+                )
+                
+                # Log the allocation in security audit
+                security_manager.log_audit_event(
+                    "bandwidth_allocation",
+                    {
+                        "connection_id": connection_id,
+                        "allocation": str(optimization_result["allocations"]),
+                        "reliability": optimization_result["qos_metrics"]["reliability"],
+                        "node_id": ha_manager.node_id
+                    }
+                )
+                
+                # Record success metrics
+                self.metrics.record_metric("bandwidth_allocation_success", {
+                    "connection_id": connection_id,
+                    "allocated": optimization_result["allocations"].get("bandwidth", 0),
+                    "reliability": optimization_result["qos_metrics"]["reliability"]
+                })
+            
+            return optimization_result
+            
+        except Exception as e:
+            self.logger.error("Bandwidth allocation failed", error=str(e))
+            self.metrics.record_metric("bandwidth_allocation_failure", {
+                "error": str(e),
+                "timestamp": time.time()
+            })
+            raise
+
+    async def _establish_connection(self, allocation: Dict, secure_channels: Dict) -> str:
+        """Establish quantum-secure network connection with HA support"""
+        try:
+            connection_id = f"conn_{str(uuid.uuid4())}"
+            timestamp = int(time.time())
+            
+            self.logger.info(
+                "Establishing connection",
+                connection_id=connection_id,
+                node_id=ha_manager.node_id
             )
             
-        return optimization_result
-
-    async def _establish_connection(self, allocation: Dict, secure_channels: Dict):
-        """Establish quantum-secure network connection"""
-        connection_id = f"conn_{str(uuid.uuid4())}"
-        timestamp = int(time.time())
-        
-        print(f"[NetworkManager] Establishing connection {connection_id}")
-        print(f"[NetworkManager] DEBUG: Allocation details: {allocation}")
-        print(f"[NetworkManager] DEBUG: Secure channels: {secure_channels}")
-        
-        self.active_connections[connection_id] = {
-            "allocation": allocation,
-            "secure_channels": secure_channels,
-            "status": "active",
-            "created_at": timestamp,
-            "last_active": timestamp,
-            "latency": allocation.get("latency_estimates", {}).get("avg_latency", 0)
-        }
-        
-        # Cleanup stale connections
-        await self._cleanup_stale_connections()
-        
-        print(f"[NetworkManager] Connection {connection_id} established successfully")
-        return connection_id
+            # Encrypt sensitive connection data
+            encrypted_allocation = await security_manager.encrypt_data(str(allocation))
+            encrypted_channels = await security_manager.encrypt_data(str(secure_channels))
+            
+            connection_data = {
+                "allocation": encrypted_allocation,
+                "secure_channels": encrypted_channels,
+                "status": "active",
+                "created_at": timestamp,
+                "last_active": timestamp,
+                "latency": allocation.get("latency_estimates", {}).get("avg_latency", 0),
+                "node_id": ha_manager.node_id,
+                "cluster_state": str(ha_manager.current_state)
+            }
+            
+            # Store connection info with encryption
+            self.active_connections[connection_id] = connection_data
+            
+            # Cleanup stale connections
+            await self._cleanup_stale_connections()
+            
+            # Log successful connection
+            security_manager.log_audit_event(
+                "connection_established",
+                {
+                    "connection_id": connection_id,
+                    "node_id": ha_manager.node_id,
+                    "timestamp": timestamp
+                }
+            )
+            
+            # Record connection metrics
+            self.metrics.record_metric("connection_established", {
+                "connection_id": connection_id,
+                "latency": connection_data["latency"],
+                "timestamp": timestamp
+            })
+            
+            self.logger.info("Connection established successfully",
+                           connection_id=connection_id,
+                           node_id=ha_manager.node_id)
+            return connection_id
+            
+        except Exception as e:
+            self.logger.error(
+                "Failed to establish connection",
+                error=str(e),
+                connection_id=connection_id if 'connection_id' in locals() else None
+            )
+            self.metrics.record_metric("connection_failure", {
+                "error": str(e),
+                "timestamp": time.time()
+            })
+            raise
 
     async def _cleanup_stale_connections(self, max_idle_time: int = 3600):
         """Remove connections that have been idle for too long"""

@@ -1,133 +1,84 @@
-"""
-AstraLink - Logging Configuration Module
-=====================================
+import logging
+import json
+from datetime import datetime
+from typing import Dict, Any
 
-This module provides a centralized logging configuration with JSON formatting,
-correlation IDs, and contextual information for comprehensive system monitoring.
-
-Developer: Reece Dixon
-Copyright © 2025 AstraLink. All rights reserved.
-See LICENSE file for licensing information.
-"""
-
-import os
-import logging.config
-from pythonjsonlogger import jsonlogger
-
-class ContextualJsonFormatter(jsonlogger.JsonFormatter):
-    def add_fields(self, log_record, record, message_dict):
-        super(ContextualJsonFormatter, self).add_fields(log_record, record, message_dict)
-        if not log_record.get('timestamp'):
-            log_record['timestamp'] = record.created
-        if not log_record.get('level'):
-            log_record['level'] = record.levelname
-        if hasattr(record, 'correlation_id'):
-            log_record['correlation_id'] = record.correlation_id
-        if hasattr(record, 'context'):
-            log_record['context'] = record.context
-
-LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "json": {
-            "()": ContextualJsonFormatter,
-            "format": "%(timestamp)s %(level)s %(name)s %(message)s %(correlation_id)s %(context)s"
-        },
-        "detailed": {
-            "format": "%(asctime)s - %(name)s - %(levelname)s - [%(correlation_id)s] - %(message)s - %(context)s - [%(filename)s:%(lineno)d]"
+class StructuredLogger:
+    """Enhanced logging with structured format and severity levels"""
+    
+    def __init__(self, service_name: str):
+        self.logger = logging.getLogger(service_name)
+        self.service_name = service_name
+        self._setup_logger()
+        
+    def _setup_logger(self):
+        """Configure logger with proper formatting"""
+        self.logger.setLevel(logging.INFO)
+        
+        # Create console handler with formatting
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        
+        # Create structured format
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        
+        self.logger.addHandler(handler)
+        
+    def _format_log(self, level: str, message: str, **kwargs) -> str:
+        """Format log message with metadata"""
+        log_data = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "service": self.service_name,
+            "level": level,
+            "message": message,
+            "metadata": kwargs
         }
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "json",
-            "stream": "ext://sys.stdout"
-        },
-        "error_file": {
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "formatter": "json",
-            "filename": "logs/error.log",
-            "when": "midnight",
-            "interval": 1,
-            "backupCount": 30,
-            "level": "ERROR",
-        },
-        "app_file": {
-            "class": "logging.handlers.TimedRotatingFileHandler",
-            "formatter": "json",
-            "filename": "logs/app.log",
-            "when": "midnight",
-            "interval": 1,
-            "backupCount": 30,
-        },
-        "debug_file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "formatter": "detailed",
-            "filename": "logs/debug.log",
-            "maxBytes": 10485760,  # 10MB
-            "backupCount": 5,
-            "level": "DEBUG",
-        }
-    },
-    "loggers": {
-        "": {  # Root logger
-            "level": os.getenv("LOG_LEVEL", "INFO"),
-            "handlers": ["console", "app_file", "error_file"],
-            "propagate": True
-        },
-        "astralink.debug": {  # Debug logger
-            "level": "DEBUG",
-            "handlers": ["debug_file"],
-            "propagate": False
-        }
-    }
-}
+        return json.dumps(log_data)
+        
+    def info(self, message: str, **kwargs):
+        """Log info level message"""
+        self.logger.info(self._format_log("INFO", message, **kwargs))
+        
+    def error(self, message: str, **kwargs):
+        """Log error level message"""
+        self.logger.error(self._format_log("ERROR", message, **kwargs))
+        
+    def warning(self, message: str, **kwargs):
+        """Log warning level message"""
+        self.logger.warning(self._format_log("WARNING", message, **kwargs))
+        
+    def critical(self, message: str, **kwargs):
+        """Log critical level message"""
+        self.logger.critical(self._format_log("CRITICAL", message, **kwargs))
+        
+    def debug(self, message: str, **kwargs):
+        """Log debug level message"""
+        self.logger.debug(self._format_log("DEBUG", message, **kwargs))
 
-def get_logger(name: str) -> logging.Logger:
-    """Get a logger with the given name."""
-    logger = logging.getLogger(name)
+class MetricsCollector:
+    """Collect and store system metrics"""
     
-    def log_with_context(msg, correlation_id=None, context=None, *args, **kwargs):
-        """Add correlation ID and context to log records."""
-        extra = kwargs.get('extra', {})
-        if correlation_id:
-            extra['correlation_id'] = correlation_id
-        if context:
-            extra['context'] = context
-        kwargs['extra'] = extra
-        return msg, args, kwargs
-    
-    original_debug = logger.debug
-    original_info = logger.info
-    original_warning = logger.warning
-    original_error = logger.error
-    original_critical = logger.critical
-    
-    def debug_with_context(msg, *args, correlation_id=None, context=None, **kwargs):
-        msg, args, kwargs = log_with_context(msg, correlation_id, context, *args, **kwargs)
-        original_debug(msg, *args, **kwargs)
-    
-    def info_with_context(msg, *args, correlation_id=None, context=None, **kwargs):
-        msg, args, kwargs = log_with_context(msg, correlation_id, context, *args, **kwargs)
-        original_info(msg, *args, **kwargs)
-    
-    def warning_with_context(msg, *args, correlation_id=None, context=None, **kwargs):
-        msg, args, kwargs = log_with_context(msg, correlation_id, context, *args, **kwargs)
-        original_warning(msg, *args, **kwargs)
-    
-    def error_with_context(msg, *args, correlation_id=None, context=None, **kwargs):
-        msg, args, kwargs = log_with_context(msg, correlation_id, context, *args, **kwargs)
-        original_error(msg, *args, **kwargs)
-    
-    def critical_with_context(msg, *args, correlation_id=None, context=None, **kwargs):
-        msg, args, kwargs = log_with_context(msg, correlation_id, context, *args, **kwargs)
-        original_critical(msg, *args, **kwargs)
-    
-    logger.debug = debug_with_context
-    logger.info = info_with_context
-    logger.warning = warning_with_context
-    logger.error = error_with_context
-    logger.critical = critical_with_context
-    
-    return logger
+    def __init__(self):
+        self.metrics: Dict[str, Any] = {}
+        
+    def record_metric(self, name: str, value: Any, tags: Dict[str, str] = None):
+        """Record a metric with optional tags"""
+        if tags is None:
+            tags = {}
+            
+        self.metrics[name] = {
+            "value": value,
+            "timestamp": datetime.utcnow().isoformat(),
+            "tags": tags
+        }
+        
+    def get_metrics(self) -> Dict[str, Any]:
+        """Get all recorded metrics"""
+        return self.metrics
+        
+    def clear_metrics(self):
+        """Clear all recorded metrics"""
+        self.metrics = {}

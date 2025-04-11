@@ -1,23 +1,30 @@
 import asyncio
 from typing import Dict, Any
-
+from app.logging_config import StructuredLogger, MetricsCollector
 class QuantumController:
     """Controller for quantum system operations"""
     
     def __init__(self):
         self.initialized = False
-        print("[QuantumController] Initializing quantum controller")
+        self.logger = StructuredLogger("QuantumController")
+        self.metrics = MetricsCollector()
+        self.logger.info("Initializing quantum controller")
         
     async def initializeQuantumSystem(self):
         """Initialize the quantum subsystem"""
         try:
-            print("[QuantumController] Starting quantum system initialization...")
+            self.logger.info("Starting quantum system initialization")
+            self.metrics.record_metric("quantum_init_start", True)
+            
             # Simulate initialization time
             await asyncio.sleep(1)
             self.initialized = True
-            print("[QuantumController] Quantum system initialized successfully")
+            
+            self.metrics.record_metric("quantum_init_success", True)
+            self.logger.info("Quantum system initialized successfully")
         except Exception as e:
-            print(f"[QuantumController] ERROR: Failed to initialize quantum system: {str(e)}")
+            self.metrics.record_metric("quantum_init_failure", True, {"error": str(e)})
+            self.logger.error("Failed to initialize quantum system", error=str(e))
             raise
             
     async def optimize_allocation(self, requests: list, network_state: Dict, constraints: Dict) -> Dict[str, Any]:
@@ -26,9 +33,16 @@ class QuantumController:
             if not self.initialized:
                 raise RuntimeError("Quantum system not initialized")
                 
-            print("[QuantumController] Running quantum optimization algorithm...")
+            self.logger.info("Running quantum optimization algorithm",
+                           request_count=len(requests),
+                           constraints=constraints)
+            
+            start_time = asyncio.get_event_loop().time()
             # Simulate optimization computation
             await asyncio.sleep(0.5)
+            
+            duration = asyncio.get_event_loop().time() - start_time
+            self.metrics.record_metric("optimization_duration", duration)
             
             # Mock optimal allocation result
             allocation = {
@@ -41,9 +55,16 @@ class QuantumController:
                 "estimated_reliability": constraints["reliability"]
             }
             
-            print("[QuantumController] Optimization completed successfully")
+            self.metrics.record_metric("optimization_success", True, {
+                "score": allocation["optimization_score"],
+                "latency": allocation["estimated_latency"]
+            })
+            self.logger.info("Optimization completed successfully",
+                           optimization_score=allocation["optimization_score"],
+                           latency=allocation["estimated_latency"])
             return allocation
             
         except Exception as e:
-            print(f"[QuantumController] ERROR: Optimization failed: {str(e)}")
+            self.metrics.record_metric("optimization_failure", True, {"error": str(e)})
+            self.logger.error("Optimization failed", error=str(e))
             raise
