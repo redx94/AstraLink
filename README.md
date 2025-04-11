@@ -306,8 +306,7 @@ This project is licensed under the [MIT License](LICENSE).
 - **Email**: quantum.apii@gmail.com
 - **Discord**: [Join AstraLink Community](https://discord.gg/astralink)
 - **GitHub Issues**: [Bug Reports & Features](https://github.com/redx94/AstraLink/issues)
-- **Developer Documentation**: [docs.astralink.network](https://docs.astralink.network)
+- **Developer Documentation**: [GitHub Documentation](https://github.com/redx94/AstraLink/tree/main/docs)
 
 ### Emergency Support
-- 24/7 Critical Issues: [status.astralink.network](https://status.astralink.network)
-- Security Vulnerabilities: security@astralink.network
+- 24/7 Critical Issues: quantum.apii@gmail.com
