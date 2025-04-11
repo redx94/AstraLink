@@ -5,23 +5,30 @@
 ![Banner](https://github.com/redx94/AstraLink/blob/main/DALL%C2%B7E%202025-02-07%2001.58.20%20-%20A%20futuristic%20technology-themed%20banner%20for%20AstraLink%2C%20a%20decentralized%20blockchain-based%20telecom%20network.%20The%20banner%20should%20have%20a%20sleek%2C%20cyberpunk-inspi.webp)
 
 ## Table of Contents
-- [Overview](#overview)
-- [Key Features](#key-features)
-- [Architecture](#architecture)
-- [Installation & Deployment](#installation--deployment)
-- [Smart Contracts](#smart-contracts)
-- [Token Economy](#token-economy)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+- [AstraLink: Decentralized Blockchain Telecom Network](#astralink-decentralized-blockchain-telecom-network)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Key Features](#key-features)
+  - [Architecture](#architecture)
+  - [Installation \& Deployment](#installation--deployment)
+    - [Prerequisites](#prerequisites)
+    - [Quick Start](#quick-start)
+    - [Production Deployment](#production-deployment)
+  - [Smart Contracts](#smart-contracts)
+  - [Token Economy](#token-economy)
+  - [Quantum Integration](#quantum-integration)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Contact](#contact)
 
 ## Overview
-AstraLink is a decentralized telecom network leveraging blockchain technology for secure, user-controlled cellular connectivity. The platform enables:
+AstraLink is a decentralized telecom network leveraging blockchain technology and quantum computing for secure, user-controlled cellular connectivity. The platform enables:
 
 - Dynamic eSIM provisioning through smart contracts
-- Peer-to-peer bandwidth sharing
+- Peer-to-peer bandwidth sharing with quantum-secured transactions
 - Cross-chain interoperability for telecom services
 - AI-optimized network resource allocation
+- Quantum error correction for enhanced security
 
 ## Key Features
 **Blockchain Core**
@@ -31,55 +38,66 @@ AstraLink is a decentralized telecom network leveraging blockchain technology fo
 - zkSNARKs for private transaction verification
 
 **Network Features**
-- Quantum-resistant encryption for secure communication
+- Quantum-resistant encryption with error correction
 - Decentralized eSIM management system
 - Autonomous node reputation scoring
 - AI-driven traffic prediction and optimization
+- Multiversal forecasting for network optimization
 
 **Enterprise Ready**
 - Carrier-grade QoS through smart contracts
 - Regulatory compliance modules
 - Multi-operator settlement system
 - Fraud detection using machine learning
+- Quantum-secured communications
 
 ## Architecture
 
 ```
-├── blockchain/              # Core smart contracts
+├── ai/                     # AI & ML Components
+│   ├── multiversal_forecaster.py     # Network prediction
+│   ├── network_optimizer.py          # Resource optimization
+│   └── quantum_ai_bridge.py         # Quantum-AI interface
+├── blockchain/            # Smart contract infrastructure
 │   ├── contracts/
-│   │   ├── DynamicESIMNFT.sol      # eSIM management
-│   │   ├── BandwidthToken.sol      # ERC-20 utility token  
-│   │   └── CrossChainBridge.sol    # Inter-blockchain ops
-├── cellular/               # Telecom integration
-│   ├── esim_manager.py     # eSIM provisioning
-│   └── carrier_integration.py # Carrier API adapters
-├── ai/                     # Network optimization
-│   ├── network_optimizer.py # Predictive analytics
-│   └── threat_detection.py # Anomaly detection
-├── api/                    # Unified service API
-│   └── unified_api.py      # REST/Web3 gateway
-└── docker/                 # Containerization
-    └── open5gs/            # Core network components
+│   │   ├── DynamicESIMNFT.sol     # eSIM management
+│   │   ├── BandwidthToken.sol     # ERC-20 utility token  
+│   │   └── CrossChainBridge.sol   # Inter-blockchain ops
+├── quantum/              # Quantum computing integration
+│   ├── quantum_controller.py      # Quantum system control
+│   ├── quantum_interface.py      # System interface
+│   └── quantum_error_correction.py # Error correction
+├── network/             # Network management
+│   ├── bandwidth_marketplace.py  # P2P bandwidth trading
+│   └── smart_handover.py       # Intelligent routing
+└── docker/             # Containerization
+    └── open5gs/        # Core network components
 ```
 
 ## Installation & Deployment
 
 ### Prerequisites
 - Docker 20.10+
-- Node.js 18.x
+- Node.js 18.x or later
 - Python 3.10+
-- Truffle Suite
+- TypeScript 5.8+
+- Hardhat Development Environment
 
 ### Quick Start
 ```bash
 git clone https://github.com/redx94/AstraLink.git
 cd AstraLink
 
+# Install dependencies
+npm install
+pip install -r requirements.txt
+
 # Start core services
-docker-compose -f docker/open5gs/docker-compose.yml up -d
+docker-compose up -d
 
 # Deploy smart contracts
-truffle migrate --network development
+npx hardhat compile
+npx hardhat deploy --network development
 ```
 
 ### Production Deployment
@@ -92,6 +110,7 @@ docker run -d \
   -p 8080:8080 \
   -p 3000:3000 \
   -e BLOCKCHAIN_NETWORK=mainnet \
+  -e QUANTUM_ENABLED=true \
   astralink:prod
 ```
 
@@ -142,6 +161,19 @@ contract DynamicESIMNFT is ERC721, Ownable {
 - 15% Team & Advisors
 - 10% Liquidity provisioning
 
+## Quantum Integration
+AstraLink leverages quantum computing for:
+- Secure key generation and distribution
+- Error correction in quantum communications
+- Resource allocation optimization
+- Quantum-resistant encryption protocols
+
+The quantum system provides:
+- High-fidelity quantum state preparation
+- Surface code error correction
+- Real-time quantum circuit optimization
+- Integration with classical AI systems
+
 ## Contributing
 We welcome contributions following these guidelines:
 
@@ -155,6 +187,7 @@ Please ensure all code:
 - Passes ESLint and Solhint checks
 - Includes comprehensive test coverage
 - Maintains backward compatibility
+- Follows TypeScript type safety guidelines
 
 ## License
 See [LICENSE](LICENSE) for details.
@@ -163,4 +196,4 @@ See [LICENSE](LICENSE) for details.
 **Core Team**
 - Email: quantum.apii@gmail.com
 - GitHub Issues: https://github.com/redx94/AstraLink/issues
-
+- Developer Chat: [Discord](https://discord.gg/astralink)
