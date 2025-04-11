@@ -1,235 +1,166 @@
-
-# Developers: Join the Revolution!
-**Are you passionate about blockchain, AI, and next-generation telecom solutions? AstraLink is building the decentralized cellular network of the future, and we need visionary developers to help bring this project to life. If you're ready to push the boundaries of connectivity and security, join our collaboration efforts today!
----
-
-To get started, feel free to clone or fork the project, star the repository to show your support, and reach out at quantum.apii@gmail.com with your ideas and contributions. Your innovation can help shape the future of global connectivity!**
----
-
-
-
-
+# AstraLink: Decentralized Blockchain Telecom Network
 
 [![GitHub Stars](https://img.shields.io/github/stars/redx94/AstraLink.svg?style=social)](https://github.com/redx94/AstraLink/stargazers)  
 [![Build and Push Prebuilt Docker Image](https://github.com/redx94/AstraLink/actions/workflows/build-and-push.yml/badge.svg)](https://github.com/redx94/AstraLink/actions/workflows/build-and-push.yml)
 ![Banner](https://github.com/redx94/AstraLink/blob/main/DALL%C2%B7E%202025-02-07%2001.58.20%20-%20A%20futuristic%20technology-themed%20banner%20for%20AstraLink%2C%20a%20decentralized%20blockchain-based%20telecom%20network.%20The%20banner%20should%20have%20a%20sleek%2C%20cyberpunk-inspi.webp)
 
----
-
 ## Table of Contents
 - [Overview](#overview)
 - [Key Features](#key-features)
-- [Architecture & Technology Stack](#architecture--technology-stack)
+- [Architecture](#architecture)
 - [Installation & Deployment](#installation--deployment)
-- [Smart Contracts & API](#smart-contracts--api)
-- [Tokenomics & Financial Model](#tokenomics--financial-model)
-- [Roadmap & Future Enhancements](#roadmap--future-enhancements)
+- [Smart Contracts](#smart-contracts)
+- [Token Economy](#token-economy)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
-- [Microtask Bot](#microtask-bot)
-
----
 
 ## Overview
-AstraLink is a quantum-classical hybrid system with AI-driven materials discovery capabilities.
+AstraLink is a decentralized telecom network leveraging blockchain technology for secure, user-controlled cellular connectivity. The platform enables:
 
-## Features
-- Quantum-Classical Control System
-- AI-Driven Materials Discovery
-- Adaptive Error Correction
-- Configuration Management
+- Dynamic eSIM provisioning through smart contracts
+- Peer-to-peer bandwidth sharing
+- Cross-chain interoperability for telecom services
+- AI-optimized network resource allocation
 
-## Setup
-1. Install dependencies
-2. Configure environment variables
-3. Initialize quantum system
-4. Start AI services
+## Key Features
+**Blockchain Core**
+- ERC-721 NFTs representing cellular spectrum access rights
+- Bandwidth Token (BWT) for resource trading
+- Cross-chain bridge for multi-network interoperability
+- zkSNARKs for private transaction verification
+
+**Network Features**
+- Quantum-resistant encryption for secure communication
+- Decentralized eSIM management system
+- Autonomous node reputation scoring
+- AI-driven traffic prediction and optimization
+
+**Enterprise Ready**
+- Carrier-grade QoS through smart contracts
+- Regulatory compliance modules
+- Multi-operator settlement system
+- Fraud detection using machine learning
 
 ## Architecture
-- `/src/config`: Configuration management
-- `/src/core`: Core functionality and error handling
-- `/src/quantum`: Quantum control systems
-- `/src/ai`: AI and materials discovery
 
-## Contributing
-Please follow the contribution guidelines in CONTRIBUTING.md
-
----
-
-## Architecture & Technology Stack
-  1. Blockchain Layer
-- Smart Contracts (Solidity):
-- Secure node registry and decentralized governance.
-- Transparent, immutable transaction logging.
-
-## Consensus & Staking:
-Leverages Proof-of-Stake combined with node reputation mechanisms.
-
-  2. AI & Data Analytics Layer
-- Real-Time Predictive Analytics:
-- Adaptive algorithms forecast traffic loads and optimize node performance.
-- Integration of chaos theory for enhanced resilience and fault tolerance.
-- Autonomous Network Management:
-- Self-healing, dynamically scaling telecom infrastructure.
-
-
-3. Cryptography & Security Layer
-- Quantum-Safe Encryption:
-- Uses post-quantum cryptographic primitives.
-- Zero-Knowledge Proofs & Secure Multiparty Computation:
-- Enables trustless verification of node integrity and secure transactions.
-
-
-4. Network & Communication Layer
-- Decentralized Peer-to-Peer Connectivity:
-- Robust protocols for dynamic routing and data relay.
-- Interoperability:
-- Seamlessly integrates with existing telecom infrastructures and emerging IoT networks.
-
----
+```
+├── blockchain/              # Core smart contracts
+│   ├── contracts/
+│   │   ├── DynamicESIMNFT.sol      # eSIM management
+│   │   ├── BandwidthToken.sol      # ERC-20 utility token  
+│   │   └── CrossChainBridge.sol    # Inter-blockchain ops
+├── cellular/               # Telecom integration
+│   ├── esim_manager.py     # eSIM provisioning
+│   └── carrier_integration.py # Carrier API adapters
+├── ai/                     # Network optimization
+│   ├── network_optimizer.py # Predictive analytics
+│   └── threat_detection.py # Anomaly detection
+├── api/                    # Unified service API
+│   └── unified_api.py      # REST/Web3 gateway
+└── docker/                 # Containerization
+    └── open5gs/            # Core network components
+```
 
 ## Installation & Deployment
 
-### **Quick Start**
-Clone the repository and navigate to the project directory:
+### Prerequisites
+- Docker 20.10+
+- Node.js 18.x
+- Python 3.10+
+- Truffle Suite
+
+### Quick Start
 ```bash
 git clone https://github.com/redx94/AstraLink.git
 cd AstraLink
+
+# Start core services
+docker-compose -f docker/open5gs/docker-compose.yml up -d
+
+# Deploy smart contracts
+truffle migrate --network development
 ```
 
-### **Docker Deployment**
-For rapid deployment, utilize our prebuilt Docker images:
+### Production Deployment
 ```bash
-# Build the Docker image
-docker build -t astralink .
+# Build Docker image with production settings
+docker build -t astralink:prod -f Dockerfile.open5gs .
 
-# Run the container
-docker run -d --name astralink -p 8080:8080 astralink
-```
-*Alternatively, rely on GitHub Actions to automatically build and push secure images to your preferred container registry.*
-
-### **Quick Start with Docker Compose**
-```bash
-# Clone the repository
-git clone https://github.com/redx94/AstraLink.git
-cd AstraLink
-
-# Start the services using Docker Compose
-docker-compose up -d
+# Run container with environment variables
+docker run -d \
+  -p 8080:8080 \
+  -p 3000:3000 \
+  -e BLOCKCHAIN_NETWORK=mainnet \
+  astralink:prod
 ```
 
----
+## Smart Contracts
 
-## Smart Contracts & API
-AstraLink’s decentralized management begins with robust smart contracts. Below is an enhanced example for node registration that includes event logging and safety checks:
-
+**Dynamic ESIM NFT (excerpt)**
 ```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.1;
+// contracts/DynamicESIMNFT.sol
+pragma solidity ^0.8.0;
 
-contract TelecomNodeRegistry {
-    /// @notice Emitted when a new node is registered
-    event NodeRegistered(address indexed nodeAddress, uint256 timestamp);
+contract DynamicESIMNFT is ERC721, Ownable {
+    struct ESIM {
+        uint256 bandwidth;
+        uint256 expiration;
+        string carrier;
+    }
+    
+    mapping(uint256 => ESIM) public esimData;
 
-    /// @notice Mapping to track registered nodes
-    mapping(address => bool) public registeredNodes;
-
-    /// @notice Registers a new telecom node if not already registered
-    /// @param node The address of the telecom node to be registered
-    function registerNode(address node) public {
-        require(!registeredNodes[node], "Node already registered.");
-        registeredNodes[node] = true;
-        emit NodeRegistered(node, block.timestamp);
+    function mintESIM(
+        address to,
+        uint256 tokenId,
+        uint256 bandwidthMB,
+        uint256 durationDays,
+        string memory carrier
+    ) public onlyOwner {
+        _mint(to, tokenId);
+        esimData[tokenId] = ESIM({
+            bandwidth: bandwidthMB,
+            expiration: block.timestamp + (durationDays * 1 days),
+            carrier: carrier
+        });
     }
 }
 ```
-*This contract forms the backbone for node authentication, enabling secure and transparent participation in the network.*
 
----
+## Token Economy
+**Bandwidth Token (BWT) Utility**
+- Purchasing cellular data packages
+- Staking for network participation
+- Governing protocol upgrades
+- Paying cross-chain transaction fees
 
-## Tokenomics & Financial Model
-AstraLink's native token, **ASTRA**, is central to the ecosystem’s economy:
-
-- **Token Utility:**  
-  - **Payments & Settlements:** ASTRA is used for telecom service fees and inter-node settlements.
-  - **Staking & Rewards:** Nodes stake ASTRA to secure network operations and receive rewards based on uptime, performance, and data relay contributions.
-  - **Incentivized Participation:** Dynamic subscription models adjust rates based on AI-driven traffic predictions and real-time network analytics.
-
-- **Economic Sustainability:**  
-  - A self-regulating economy designed to balance supply and demand, ensuring long-term network resilience and growth.
-  - Integrated governance mechanisms enable community-driven evolution of financial models and network policies.
-
----
-
-## Roadmap & Future Enhancements
-AstraLink is on a trajectory to redefine telecommunications. Upcoming milestones include:
-
-- **Enhanced AI Modules:**  
-  - Deep learning models for hyper-local traffic prediction and adaptive resource allocation.
-- **Full Decentralized Governance:**  
-  - Implementation of on-chain voting mechanisms and community-driven upgrades.
-- **Quantum Security Integration:**  
-  - Rolling out advanced post-quantum cryptographic protocols across all layers.
-- **Interoperability Expansion:**  
-  - Seamless integration with legacy telecom infrastructure and emerging IoT networks.
-- **Scalability & Performance Upgrades:**  
-  - Ongoing optimization of blockchain throughput and AI model efficiency to support global telecom demands.
-
----
+**Economic Model**
+- Fixed supply of 1,000,000,000 BWT
+- 45% Network rewards pool
+- 30% Ecosystem development
+- 15% Team & Advisors
+- 10% Liquidity provisioning
 
 ## Contributing
-We welcome contributions from developers and researchers passionate about decentralized networks and advanced telecom technologies.  
-**Guidelines:**
-- **Fork** the repository and create your branch (`feature/new-tech`).
-- **Commit** your changes with clear, descriptive messages.
-- **Pull Request**: Submit your PR for review with detailed documentation of your contributions.
-- Please ensure all code adheres to our security and quality standards, with encryption protocols embedded where necessary.
+We welcome contributions following these guidelines:
 
-For detailed contribution guidelines, please refer to [CONTRIBUTING.md](CONTRIBUTING.md).
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/improvement`)
+3. Commit changes (`git commit -m 'Add feature'`)
+4. Push to branch (`git push origin feature/improvement`)
+5. Open Pull Request
 
----
+Please ensure all code:
+- Passes ESLint and Solhint checks
+- Includes comprehensive test coverage
+- Maintains backward compatibility
 
 ## License
-AstraLink is licensed under the [MIT License](https://opensource.org/licenses/MIT).  
-Please refer to the license file for further details on permitted uses and restrictions.
-
----
+See [LICENSE](LICENSE) for details.
 
 ## Contact
-For inquiries, support, or collaboration opportunities, please reach out via:  
-- **Email:** [reece.dixon@quantum.api](mailto:reece.dixon@quantum.api)  
-- **Discord:**
-- **GitHub Issues:** Submit an issue on [GitHub](https://github.com/redx94/AstraLink/issues)
+**Core Team**
+- Email: quantum.apii@gmail.com
+- GitHub Issues: https://github.com/redx94/AstraLink/issues
 
----
-
-## Microtask Bot
-
-The microtask bot monitors Gitcoin for available bounties and stores them locally for processing.
-
-### Features
-- Automated bounty fetching from Gitcoin
-- Configurable polling interval
-- Error handling and logging
-- JSON storage of bounty data
-
-### Setup
-1. Install dependencies:
-```bash
-pip install requests
-```
-
-2. Run the bot:
-```bash
-python astra-genesis/genesis-bot/microtask-bot.py
-```
-
-### Configuration
-- `GITCOIN_API_URL`: Gitcoin API endpoint
-- `POLL_INTERVAL`: Time between API calls (in seconds)
-- `OUTPUT_FILE`: Path to store bounty data
-
----
-
-*This README encapsulates AstraLink's cutting-edge approach to merging blockchain, AI, and quantum-resilient security into a cohesive telecom ecosystem. Every component is designed with scalability, ethical integrity, and intellectual property protection in mind, ensuring that the innovations remain secure and exclusively actionable by its stewards.*
