@@ -18,6 +18,7 @@ import yaml
 from dns import resolver
 from logging_config import get_logger
 from exceptions import NetworkError, ContractError
+from datetime import datetime
 
 logger = get_logger(__name__)
 

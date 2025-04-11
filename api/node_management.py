@@ -19,6 +19,7 @@ import json
 import yaml
 from datetime import datetime
 import aiohttp
+import uuid
 from quantum.quantum_error_correction import QuantumErrorCorrection
 from network.handshake_integration import HandshakeIntegration
 from tools.security_auditor import SecurityAuditor

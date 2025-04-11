@@ -11,12 +11,21 @@ class PredictiveMaintenance:
         self.model = self._build_predictive_model()
         self.qec = QuantumErrorCorrection()
         self.maintenance_history = []
+        self.anomaly_detector = self._build_anomaly_detector()
 
     def _build_predictive_model(self):
         return tf.keras.Sequential([
             tf.keras.layers.LSTM(64, return_sequences=True),
             tf.keras.layers.LSTM(32),
             tf.keras.layers.Dense(16, activation='relu'),
+            tf.keras.layers.Dense(1, activation='sigmoid')
+        ])
+
+    def _build_anomaly_detector(self):
+        # Placeholder for actual anomaly detector model
+        return tf.keras.Sequential([
+            tf.keras.layers.Dense(64, activation='relu'),
+            tf.keras.layers.Dense(32, activation='relu'),
             tf.keras.layers.Dense(1, activation='sigmoid')
         ])
 

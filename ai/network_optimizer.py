@@ -15,6 +15,7 @@ import tensorflow as tf
 import numpy as np
 from quantum.quantum_error_correction import QuantumErrorCorrection
 from scipy.optimize import linear_sum_assignment
+import logging
 
 class NetworkOptimizer:
     def __init__(self):
@@ -58,7 +59,6 @@ class NetworkOptimizer:
         logging.info(f"Preprocessed metrics array: {processed_metrics_array}")
         return processed_metrics_array
 
-    import logging
     logging.basicConfig(level=logging.INFO)
 
     async def optimize_network_slice(self, metrics: Dict) -> Dict:

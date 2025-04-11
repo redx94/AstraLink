@@ -24,6 +24,7 @@ from quantum.quantum_error_correction import QuantumErrorCorrection
 from blockchain.smart_contract_manager import SmartContractManager
 from network.handshake_integration import HandshakeIntegration
 from logging_config import get_logger
+from datetime import datetime
 
 logger = get_logger(__name__)
 

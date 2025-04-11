@@ -4,10 +4,12 @@ class AIAgent:
     def __init__(self, name, role):
         self.name = name
         self.role = role
-        self.current_state = "idel"
+        self.current_state = "idle"
 
     def perform_task(self, task):
-        "" Takes on specific tasks based on agent's role."
+        """ 
+        Takes on specific tasks based on agent's role. 
+        """
         return {
             "agent": self.name,
             "task": task,
