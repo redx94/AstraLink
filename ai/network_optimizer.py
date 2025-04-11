@@ -35,8 +35,9 @@ class NetworkOptimizer:
 
     def _preprocess_metrics(self, metrics: Dict) -> np.ndarray:
         """Preprocess network metrics for ML model input"""
+        logging.info(f"_preprocess_metrics called with metrics: {metrics}")
         processed_metrics = []
-        
+
         # Extract and normalize key metrics
         processed_metrics.extend([
             metrics.get('bandwidth_usage', 0) / 100.0,
@@ -45,38 +46,58 @@ class NetworkOptimizer:
             metrics.get('signal_strength', -100) / -100.0,
             metrics.get('interference_level', 0) / 100.0
         ])
-        
+
         # Add derived features
         processed_metrics.extend([
             self._calculate_network_load(metrics),
             self._calculate_qos_score(metrics),
             self._calculate_interference_impact(metrics)
         ])
-        
-        return np.array(processed_metrics).reshape(1, -1)
+
+        processed_metrics_array = np.array(processed_metrics).reshape(1, -1)
+        logging.info(f"Preprocessed metrics array: {processed_metrics_array}")
+        return processed_metrics_array
+
+    import logging
+    logging.basicConfig(level=logging.INFO)
 
     async def optimize_network_slice(self, metrics: Dict) -> Dict:
         """Real-time network slice optimization"""
-        prediction = self.model.predict(self._preprocess_metrics(metrics))
-        return {
+        logging.info(f"optimize_network_slice called with metrics: {metrics}")
+        preprocessed_metrics = self._preprocess_metrics(metrics)
+        logging.info(f"Preprocessed metrics: {preprocessed_metrics}")
+        prediction = self.model.predict(preprocessed_metrics)
+        logging.info(f"Model prediction: {prediction}")
+        result = {
             "bandwidth_allocation": prediction[0],
             "latency_optimization": prediction[1],
             "power_settings": prediction[2],
             "quantum_secure": True
         }
+        logging.info(f"optimize_network_slice returning: {result}")
+        return result
 
     async def predict_network_congestion(self, current_state: Dict) -> List:
         """Predict network congestion points before they occur"""
-        return self.model.predict(self._preprocess_state(current_state))
+        logging.info(f"predict_network_congestion called with current_state: {current_state}")
+        preprocessed_state = self._preprocess_state(current_state)
+        logging.info(f"Preprocessed state: {preprocessed_state}")
+        prediction = self.model.predict(preprocessed_state)
+        logging.info(f"Model prediction: {prediction}")
+        return prediction
 
     async def optimize_handover_sequence(self, user_trajectory: List) -> Dict:
         """Predictive handover optimization using AI"""
+        logging.info(f"optimize_handover_sequence called with user_trajectory: {user_trajectory}")
         optimal_sequence = self.model.predict(np.array(user_trajectory))
-        return {
+        logging.info(f"Model prediction: {optimal_sequence}")
+        result = {
             "handover_sequence": optimal_sequence,
             "predicted_quality": self._calculate_quality_score(optimal_sequence),
             "energy_efficiency": self._calculate_energy_score(optimal_sequence)
         }
+        logging.info(f"optimize_handover_sequence returning: {result}")
+        return result
 
     def _calculate_quality_score(self, sequence: np.ndarray) -> float:
         """Calculate handover quality score based on multiple metrics"""

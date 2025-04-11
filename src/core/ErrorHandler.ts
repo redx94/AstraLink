@@ -59,6 +59,7 @@ export class ErrorHandler {
 
     static initialize(metricsClient: MetricsClient): void {
         this.metricsClient = metricsClient;
+        console.log('Metrics client initialized:', metricsClient);
     }
 
     static handle(error: Error, correlationId?: string): void {
@@ -69,9 +70,11 @@ export class ErrorHandler {
         if (correlationId) {
             astraError.metadata.correlationId = correlationId;
         }
-
-        // Log error with full context
-        console.error(JSON.stringify(astraError.toJSON()));
+// Log error with full context
+console.error('Error:', astraError);
+console.error(JSON.stringify(astraError.toJSON()));
+console.log('Correlation ID:', correlationId);
+console.log('Full Error Object:', error);
         
         // Track error metrics
         if (this.metricsClient) {

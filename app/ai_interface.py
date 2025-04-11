@@ -32,8 +32,10 @@ class AISystem:
 
     async def predict_material_properties(self, structure: Dict[str, Any]) -> AIModelResult:
         try:
+            logger.info(f"Predicting material properties for structure: {structure}")
             # Implement material property prediction
             prediction = await self._run_prediction_model(structure)
+            logger.info(f"Prediction result: {prediction}")
             return AIModelResult(
                 prediction=prediction,
                 confidence=0.95,

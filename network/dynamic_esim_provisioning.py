@@ -172,6 +172,7 @@ class QuantumSecureESIM:
                 context={"token_id": token_id}
             )
 
+            logger.info(f"provision_esim returning: {response}")
             return response
 
         except Exception as e:
@@ -198,97 +199,98 @@ class QuantumSecureESIM:
         except Exception as e:
             logger.error(f"Encryption failed: {str(e)}")
             raise QuantumSystemError("Failed to encrypt device info")
-
-    async def _mint_esim_nft(
-        self,
-        user_id: str,
-        encrypted_info: bytes,
-        quantum_signature: bytes,
-        bandwidth: int,
-        correlation_id: str
-    ) -> int:
-        """Mint eSIM NFT with quantum security"""
-        try:
-            # Get account with sufficient balance
-            accounts = await self.web3.eth.accounts
-            if not accounts:
-                raise ResourceExhaustedError("No available accounts")
-                
-            sender = accounts[0]
-            balance = await self.web3.eth.get_balance(sender)
+async def _mint_esim_nft(
+    self,
+    user_id: str,
+    encrypted_info: bytes,
+    quantum_signature: bytes,
+    bandwidth: int,
+    correlation_id: str
+) -> int:
+    """Mint eSIM NFT with quantum security"""
+    logger.info(f"_mint_esim_nft called with user_id: {user_id}, encrypted_info: {encrypted_info}, quantum_signature: {quantum_signature}, bandwidth: {bandwidth}, correlation_id: {correlation_id}")
+    try:
+        # Get account with sufficient balance
+        accounts = await self.web3.eth.accounts
+        if not accounts:
+            raise ResourceExhaustedError("No available accounts")
             
-            # Estimate gas and check balance
-            gas_estimate = await self.contract.functions.mintESIM(
-                sender,
-                encrypted_info.hex(),
-                bandwidth,
-                quantum_signature
-            ).estimate_gas({'from': sender})
+        sender = accounts[0]
+        balance = await self.web3.eth.get_balance(sender)
+        
+        # Estimate gas and check balance
+        gas_estimate = await self.contract.functions.mintESIM(
+            sender,
+            encrypted_info.hex(),
+            bandwidth,
+            quantum_signature
+        ).estimate_gas({'from': sender})
+        
+        gas_price = await self.web3.eth.gas_price
+        total_cost = gas_estimate * gas_price
+        
+        if balance < total_cost:
+            raise ResourceExhaustedError("Insufficient balance for minting")
+        
+        # Build and send transaction
+        nonce = await self.web3.eth.get_transaction_count(sender)
+        tx = await self.contract.functions.mintESIM(
+            sender,
+            encrypted_info.hex(),
+            bandwidth,
+            quantum_signature
+        ).build_transaction({
+            'from': sender,
+            'gas': gas_estimate,
+            'gasPrice': gas_price,
+            'nonce': nonce,
+        })
+        
+        # Sign and send transaction
+        signed_tx = self.web3.eth.account.sign_transaction(tx, private_key=self.config['private_key'])
+        tx_hash = await self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        
+        # Wait for receipt and process events
+        receipt = await self.web3.eth.wait_for_transaction_receipt(tx_hash)
+        if receipt['status'] != 1:
+            raise ResourceExhaustedError("Transaction failed")
             
-            gas_price = await self.web3.eth.gas_price
-            total_cost = gas_estimate * gas_price
+        events = await self.contract.events.ESIMMinted().process_receipt(receipt)
+        if not events:
+            raise ResourceExhaustedError("No mint event found")
             
-            if balance < total_cost:
-                raise ResourceExhaustedError("Insufficient balance for minting")
-            
-            # Build and send transaction
-            nonce = await self.web3.eth.get_transaction_count(sender)
-            tx = await self.contract.functions.mintESIM(
-                sender,
-                encrypted_info.hex(),
-                bandwidth,
-                quantum_signature
-            ).build_transaction({
-                'from': sender,
-                'gas': gas_estimate,
-                'gasPrice': gas_price,
-                'nonce': nonce,
-            })
-            
-            # Sign and send transaction
-            signed_tx = self.web3.eth.account.sign_transaction(tx, private_key=self.config['private_key'])
-            tx_hash = await self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-            
-            # Wait for receipt and process events
-            receipt = await self.web3.eth.wait_for_transaction_receipt(tx_hash)
-            if receipt['status'] != 1:
-                raise ResourceExhaustedError("Transaction failed")
-                
-            events = await self.contract.events.ESIMMinted().process_receipt(receipt)
-            if not events:
-                raise ResourceExhaustedError("No mint event found")
-                
-            token_id = events[0]['args']['tokenId']
-            
-            logger.info(
-                "NFT minted successfully",
-                extra={
-                    'correlation_id': correlation_id,
-                    'context': {
-                        'token_id': token_id,
-                        'gas_used': receipt['gasUsed'],
-                        'block_number': receipt['blockNumber']
-                    }
+        token_id = events[0]['args']['tokenId']
+        
+        logger.info(
+            "NFT minted successfully",
+            extra={
+                'correlation_id': correlation_id,
+                'context': {
+                    'token_id': token_id,
+                    'gas_used': receipt['gasUsed'],
+                    'block_number': receipt['blockNumber']
                 }
-            )
-            
-            return token_id
-            
-        except Exception as e:
-            logger.error(
-                f"NFT minting failed: {str(e)}",
-                extra={
-                    'correlation_id': correlation_id,
-                    'context': {'user_id': user_id}
-                }
-            )
-            raise ResourceExhaustedError(f"Failed to mint eSIM NFT: {str(e)}")
+            }
+        )
+        
+        logger.info(f"_mint_esim_nft returning: {token_id}")
+        return token_id
+        
+    except Exception as e:
+        logger.error(
+            f"NFT minting failed: {str(e)}",
+            extra={
+                'correlation_id': correlation_id,
+                'context': {'user_id': user_id}
+            }
+        )
+        raise ResourceExhaustedError(f"Failed to mint eSIM NFT: {str(e)}")
 
     async def _activate_esim(self, token_id: int, correlation_id: str):
         """Activate eSIM on the network"""
         try:
             tx = await self.contract.functions.activateESIM(token_id).build_transaction({
-                'from': self.web3.eth.defaultAccount,
+                'from': self.web3.eth.accounts[0],
                 'gas': 200000,  # Estimated gas limit
                 'gasPrice': await self.web3.eth.gas_price,
                 'nonce': await self.web3.eth.get_transaction_count(self.web3.eth.defaultAccount)
@@ -318,7 +320,7 @@ class QuantumSecureESIM:
                 token_id,
                 new_bandwidth
             ).build_transaction({
-                'from': self.web3.eth.defaultAccount,
+                'from': self.web3.eth.accounts[0],
                 'gas': 200000,
                 'gasPrice': await self.web3.eth.gas_price,
                 'nonce': await self.web3.eth.get_transaction_count(self.web3.eth.defaultAccount)
@@ -367,6 +369,7 @@ class QuantumSecureESIM:
         correlation_id: str
     ) -> bytes:
         """Generate quantum-resistant signature"""
+        logger.info(f"_generate_quantum_signature called with data: {data}, correlation_id: {correlation_id}")
         try:
             # Create quantum signature circuit with error correction
             circuit = await self._create_signature_circuit(data)
@@ -389,6 +392,15 @@ class QuantumSecureESIM:
                         
                         # Verify signature strength
                         if not self._verify_signature_strength(signature):
+                            logger.warning(
+                                "Generated signature below strength threshold",
+                                extra={
+                                    'correlation_id': correlation_id,
+                                    'context': {
+                                        'signature_strength': self._calculate_signature_strength(signature)
+                                    }
+                                }
+                            )
                             raise QuantumSystemError("Generated signature below strength threshold")
                             
                         logger.info(
@@ -402,7 +414,7 @@ class QuantumSecureESIM:
                                 }
                             }
                         )
-                        
+                        logger.info(f"_generate_quantum_signature returning: {signature}")
                         return signature
                         
                     retry_count += 1

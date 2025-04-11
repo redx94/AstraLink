@@ -164,9 +164,11 @@ class QuantumSystem:
         params: Optional[List[float]] = None
     ) -> Dict[str, Any]:
         try:
+            logger.info(f"Executing quantum operation: {operation} with qubits: {qubits} and params: {params}")
             # Implement parallel quantum operations
             circuit = self._create_quantum_circuit(operation, qubits, params)
             results = await self._parallel_execute(circuit)
+            logger.info(f"Quantum operation results: {results}")
             return self._process_results(results)
         except Exception as e:
             logger.error(f"Quantum execution failed: {str(e)}", exc_info=True)
