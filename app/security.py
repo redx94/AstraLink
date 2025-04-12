@@ -161,7 +161,11 @@ class SecurityManager:
             
             # Load API keys from config file
             import yaml
-            with open("config/security_auditor.yaml", "r") as f:
+            from fastapi import Depends
+            from .config import get_settings
+
+            settings = get_settings()
+            with open(settings.security_config_path, "r") as f:
                 config = yaml.safe_load(f)
             api_keys = config.get("api_keys", {})
 

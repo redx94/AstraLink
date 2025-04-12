@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # AstraLink API service
   astralink_api:
     build:
       context: .
@@ -9,6 +10,7 @@ services:
     container_name: astralink_api
     restart: unless-stopped
     environment:
+      # Environment variables for AstraLink API
       - NODE_ENV=production
       - LOG_LEVEL=info
       - QUANTUM_SYSTEM_ENABLED=true
@@ -46,6 +48,7 @@ services:
           cpus: '0.5'
           memory: 1G
 
+  # Quantum System service
   quantum_system:
     build:
       context: .

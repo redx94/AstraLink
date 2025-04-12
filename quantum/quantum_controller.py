@@ -39,20 +39,22 @@ class QuantumController:
             
             start_time = asyncio.get_event_loop().time()
             # Simulate optimization computation
+            # Placeholder for actual quantum optimization algorithm
             await asyncio.sleep(0.5)
-            
+
             duration = asyncio.get_event_loop().time() - start_time
             self.metrics.record_metric("optimization_duration", duration)
             
-            # Mock optimal allocation result
+            # Mock optimal allocation result (replace with actual quantum algorithm output)
+            total_bandwidth = sum(req["bandwidth"] for req in requests)
             allocation = {
                 "bandwidth_allocation": {
-                    req.get("id", f"req_{i}"): req["bandwidth"]
+                    req.get("id", f"req_{i}"): min(req["bandwidth"], total_bandwidth / len(requests))
                     for i, req in enumerate(requests)
                 },
-                "optimization_score": 0.95,
-                "estimated_latency": constraints["max_latency"] * 0.5,
-                "estimated_reliability": constraints["reliability"]
+                "optimization_score": 0.8 + (0.2 * len(requests) / 10),  # Scale score with request count
+                "estimated_latency": constraints["max_latency"] * (0.6 - (0.1 * len(requests) / 10)), # Latency decreases with more requests
+                "estimated_reliability": min(constraints["reliability"] + (0.01 * len(requests) / 10), 0.99) # Reliability increases with more requests
             }
             
             self.metrics.record_metric("optimization_success", True, {

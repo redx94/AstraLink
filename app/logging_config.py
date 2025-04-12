@@ -26,6 +26,15 @@ class StructuredLogger:
         handler.setFormatter(formatter)
         
         self.logger.addHandler(handler)
+
+        # Create console handler with human-readable formatting
+        human_handler = logging.StreamHandler()
+        human_handler.setLevel(logging.INFO)
+        human_formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s'
+        )
+        human_handler.setFormatter(human_formatter)
+        self.logger.addHandler(human_handler)
         
     def _format_log(self, level: str, message: str, **kwargs) -> str:
         """Format log message with metadata"""

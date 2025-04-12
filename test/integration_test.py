@@ -140,6 +140,7 @@ class TestMonitoring:
         monitor = env["monitor"]
         
         health = await monitor.check_system_health()
+        # TODO: Update test to use actual system metrics instead of mock data
         assert health.status in ["healthy", "warning", "critical"]
         
     @pytest.mark.asyncio

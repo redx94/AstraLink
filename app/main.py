@@ -149,7 +149,11 @@ async def startup_event():
     try:
         logger.info("Starting AstraLink API")
         # Perform initial health check
-        await system_monitor.check_system_health()
+        try:
+            await system_monitor.check_system_health()
+            logger.info("Initial health check passed")
+        except Exception as e:
+            logger.warning("Initial health check failed, but continuing startup", error=str(e))
         logger.info("AstraLink API started successfully")
     except Exception as e:
         logger.critical("Failed to start AstraLink API", error=str(e))

@@ -73,7 +73,7 @@ class SystemMonitor:
     async def _check_quantum_health(self) -> Dict[str, Any]:
         """Check quantum system health"""
         try:
-            # Mock quantum system metrics
+            # TODO: Replace mock metrics with actual quantum system metrics
             error_rate = 0.05  # 0.05% error rate
             coherence_time = 100  # 100 microseconds
             gate_fidelity = 0.9995  # 99.95% fidelity
@@ -96,7 +96,7 @@ class SystemMonitor:
     async def _check_network_health(self) -> Dict[str, Any]:
         """Check network health metrics"""
         try:
-            # Mock network metrics
+            # TODO: Replace mock metrics with actual network metrics
             latency = 15.0  # ms
             packet_loss = 0.01  # 0.01%
             bandwidth_usage = 65.0  # 65%
@@ -119,6 +119,12 @@ class SystemMonitor:
     async def _check_resource_usage(self) -> Dict[str, Any]:
         """Check system resource usage"""
         try:
+            # TODO: Replace mock metrics with actual system metrics using psutil
+            # Example:
+            # cpu_usage = psutil.cpu_percent()
+            # memory_usage = psutil.virtual_memory().percent
+            # disk_usage = psutil.disk_usage('/').percent
+
             # Mock resource metrics
             cpu_usage = 45.0  # 45%
             memory_usage = 60.0  # 60%
@@ -144,7 +150,7 @@ class SystemMonitor:
     async def _check_security_status(self) -> Dict[str, Any]:
         """Check security systems status"""
         try:
-            # Mock security metrics
+            # TODO: Replace mock metrics with actual security system metrics
             encryption_status = "active"
             key_age = 120  # 2 minutes
             failed_auth_attempts = 0

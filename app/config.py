@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     quantum_timeout: int = 30
     ai_model_version: str = "v1"
     max_qubits: int = 50
+    security_config_path: str = "config/security_auditor.yaml"
     
     class Config:
         env_file = ".env"
