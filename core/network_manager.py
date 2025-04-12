@@ -9,6 +9,7 @@ from app.high_availability import ha_manager, NodeState
 from app.logging_config import StructuredLogger, MetricsCollector
 from functools import wraps
 import backoff
+import yaml
 
 def with_retry(max_tries=3, max_time=30):
     """Decorator for retry logic with exponential backoff"""
@@ -37,6 +38,20 @@ class NetworkManager:
         self.logger = StructuredLogger("NetworkManager")
         self.metrics = MetricsCollector()
         self.logger.info("Network manager initialized")
+        self.config = self._load_config()
+        self.max_bandwidth = self.config.get('network', {}).get('max_bandwidth', 10000)  # 10 Gbps default
+        self.connection_timeout = self.config.get('network', {}).get('connection_timeout', 3600)  # 1 hour default
+        self.max_retries = self.config.get('network', {}).get('max_retries', 3)
+        self.retry_delay = self.config.get('network', {}).get('retry_delay', 30)  # 30 seconds between retries
+
+    def _load_config(self) -> Dict:
+        """Load network configuration"""
+        try:
+            with open('config/cellular_network.yaml', 'r') as f:
+                return yaml.safe_load(f)
+        except Exception as e:
+            self.logger.error(f"Failed to load config: {e}")
+            return {}
 
     async def start_maintenance_loop(self):
         """Start periodic maintenance tasks"""
@@ -304,21 +319,107 @@ class NetworkManager:
             })
             raise
 
-    async def _cleanup_stale_connections(self, max_idle_time: int = 3600):
+    async def _cleanup_stale_connections(self, max_idle_time: int = None):
         """Remove connections that have been idle for too long"""
-        current_time = int(time.time())
-        
-        print("[NetworkManager] DEBUG: Starting connection cleanup")
-        print(f"[NetworkManager] DEBUG: Current active connections: {len(self.active_connections)}")
-        
-        stale_connections = [
-            conn_id for conn_id, conn in self.active_connections.items()
-            if current_time - conn["last_active"] > max_idle_time
-        ]
-        
-        for conn_id in stale_connections:
-            print(f"[NetworkManager] Removing stale connection {conn_id}")
+        try:
+            current_time = int(time.time())
+            max_idle = max_idle_time or self.connection_timeout
+            
+            self.logger.info("Starting connection cleanup",
+                           active_connections=len(self.active_connections))
+            
+            stale_connections = []
+            for conn_id, conn in self.active_connections.items():
+                # Check if connection is actually active
+                try:
+                    if not await self._verify_connection_active(conn):
+                        stale_connections.append(conn_id)
+                        continue
+                    
+                    # Check idle time
+                    if current_time - conn["last_active"] > max_idle:
+                        stale_connections.append(conn_id)
+                        continue
+                        
+                    # Verify quantum channel integrity
+                    if not await self._verify_quantum_channel(conn):
+                        stale_connections.append(conn_id)
+                        continue
+                except Exception as e:
+                    self.logger.warning(f"Error checking connection {conn_id}: {e}")
+                    stale_connections.append(conn_id)
+            
+            # Remove stale connections
+            for conn_id in stale_connections:
+                await self._gracefully_terminate_connection(conn_id)
+                
+            self.logger.info("Connection cleanup completed",
+                           removed_connections=len(stale_connections),
+                           remaining_connections=len(self.active_connections))
+                           
+        except Exception as e:
+            self.logger.error(f"Connection cleanup failed: {e}")
+            self.metrics.record_metric("cleanup_failure", True, {"error": str(e)})
+
+    async def _verify_connection_active(self, connection: Dict) -> bool:
+        """Verify if a connection is still active and healthy"""
+        try:
+            # Decrypt connection data
+            allocation = await security_manager.decrypt_data(connection["allocation"])
+            channels = await security_manager.decrypt_data(connection["secure_channels"])
+            
+            # Verify bandwidth allocation is still valid
+            if not await self.bandwidth_marketplace.verify_allocation(allocation):
+                return False
+                
+            # Check quantum channel integrity
+            if not await self.quantum_controller.verify_channels(channels):
+                return False
+                
+            return True
+        except Exception as e:
+            self.logger.debug(f"Connection verification failed: {e}")
+            return False
+
+    async def _gracefully_terminate_connection(self, conn_id: str):
+        """Gracefully terminate a connection and cleanup resources"""
+        try:
+            connection = self.active_connections[conn_id]
+            
+            # Release quantum resources
+            await self.quantum_controller.release_channels(
+                await security_manager.decrypt_data(connection["secure_channels"])
+            )
+            
+            # Release bandwidth allocation
+            await self.bandwidth_marketplace.release_allocation(
+                await security_manager.decrypt_data(connection["allocation"])
+            )
+            
+            # Log termination
+            self.logger.info(f"Connection {conn_id} terminated gracefully")
+            self.metrics.record_metric("connection_terminated", {
+                "connection_id": conn_id,
+                "reason": "cleanup",
+                "timestamp": time.time()
+            })
+            
+            # Remove from active connections
             del self.active_connections[conn_id]
+            
+        except Exception as e:
+            self.logger.error(f"Failed to gracefully terminate connection {conn_id}: {e}")
+            # Force remove the connection in case of failure
+            self.active_connections.pop(conn_id, None)
+
+    async def _verify_quantum_channel(self, connection: Dict) -> bool:
+        """Verify quantum channel integrity"""
+        try:
+            channels = await security_manager.decrypt_data(connection["secure_channels"])
+            return await self.quantum_controller.verify_channel_integrity(channels)
+        except Exception as e:
+            self.logger.debug(f"Quantum channel verification failed: {e}")
+            return False
 
     async def _calculate_current_qos(self) -> Dict[str, Any]:
         """Calculate current QoS metrics"""
@@ -371,7 +472,7 @@ class NetworkManager:
         try:
             total_allocated = sum(conn["allocation"].get("bandwidth", 0) 
                                 for conn in self.active_connections.values())
-            max_bandwidth = 10000  # 10 Gbps maximum theoretical bandwidth
+            max_bandwidth = self.max_bandwidth  # Use the configured max bandwidth
             return (total_allocated / max_bandwidth) * 100
         except Exception as e:
             print(f"[NetworkManager] ERROR: Failed to calculate bandwidth utilization: {str(e)}")

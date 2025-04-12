@@ -22,11 +22,13 @@ mindmap
       5G Integration
       Edge Computing
       Satellite Links
+      Handshake DNS
     [Blockchain Core]
       Smart Contracts
       Cross-Chain Ops
       NFT Management
       Zero-Knowledge Proofs
+      Decentralized DNS
     [AI Operations]
       Network Optimization
       Predictive Maintenance
@@ -57,6 +59,7 @@ Choose your entry point into the AstraLink universe:
 - [Network Architecture](docs/ARCHITECTURE.md) - System design
 - [Deployment Guide](docs/deployment_guide.md) - Infrastructure setup
 - [Performance Optimization](docs/best_practices.md) - System tuning
+- [Handshake Integration](docs/handshake_guide.md) - Decentralized DNS setup
 
 ### 💫 Development Realm
 - [Developer Portal](docs/developer_guide.md) - Build on AstraLink
@@ -74,7 +77,7 @@ cd AstraLink
 npm install
 pip install -r requirements.txt
 
-# Launch your node
+# Launch your node with Handshake DNS support
 docker-compose up -d
 ```
 
@@ -84,6 +87,7 @@ docker-compose up -d
 - **Dynamic eSIM Management**: Blockchain-based, quantum-protected profile provisioning
 - **AI Network Optimization**: Real-time resource allocation and predictive maintenance
 - **Cross-Chain Interoperability**: Seamless blockchain integration and asset management
+- **Decentralized DNS Infrastructure**: Handshake-powered domain (.quantum.api) with DNSSEC
 - **Regulatory Compliance**: Built-in frameworks for GDPR, HIPAA, ISO27001, and more
 
 ## 🎯 Status Dashboard
@@ -103,6 +107,22 @@ quadrantChart
     "AstraLink": [0.9, 0.95]
 ```
 
+## 🌐 Network Infrastructure
+
+AstraLink leverages the Handshake naming system for truly decentralized DNS resolution. Our network operates on the `quantum.api` domain, providing:
+
+- **Decentralized Authority**: No central certificate authorities
+- **DNSSEC Integration**: Quantum-safe DNS security
+- **Service Discovery**: Automatic node and service resolution
+- **High Availability**: Distributed DNS infrastructure
+- **Quantum-Safe Records**: Post-quantum cryptographic signatures
+
+Access our services through our Handshake domain:
+- API Gateway: `api.quantum.api`
+- RPC Endpoint: `rpc.quantum.api`
+- Developer Portal: `dev.quantum.api`
+- Status Dashboard: `status.quantum.api`
+
 ## 🤝 Join the Revolution
 
 - [Discord Community](https://discord.gg/astralink)
@@ -117,6 +137,7 @@ For enterprise-grade support and custom solutions:
 - 🛡️ Custom Security Audits
 - 🚀 Dedicated Engineering Team
 - 📊 Performance Optimization
+- 🔒 Custom Handshake Domain Integration
 
 Contact: quantum.apii@gmail.com
 

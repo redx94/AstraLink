@@ -242,3 +242,334 @@ class MetricsAggregator:
         except Exception as e:
             self.logger.error("Metrics aggregation failed", error=str(e))
             return {}
+
+"""
+Monitoring System - Enhanced with Redis caching
+"""
+from typing import Dict, Any, List, Optional
+import time
+import asyncio
+from datetime import datetime, timedelta
+from collections import defaultdict
+from dataclasses import dataclass
+from enum import Enum
+import json
+import numpy as np
+from .logging_config import get_logger
+from .config import config_manager
+from .monitoring.cache_manager import cache_manager
+
+logger = get_logger(__name__)
+
+class MetricType(Enum):
+    COUNTER = "counter"
+    GAUGE = "gauge"
+    HISTOGRAM = "histogram"
+    SUMMARY = "summary"
+
+class MetricSeverity(Enum):
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
+
+@dataclass
+class MetricThreshold:
+    warning: float
+    error: float
+    critical: float
+    comparison: str = "greater"  # or "less"
+    duration: int = 0  # Duration in seconds for the condition to persist
+
+@dataclass
+class Alert:
+    id: str
+    severity: MetricSeverity
+    message: str
+    metric_name: str
+    current_value: float
+    threshold_value: float
+    timestamp: float
+
+class MetricsCollector:
+    def __init__(self):
+        self.config = config_manager.get_value('monitoring', {})
+        self._metrics = defaultdict(dict)
+        self._rate_limits = {}
+        self._thresholds = self._load_thresholds()
+        self._active_alerts = set()
+        self._alert_history = []
+        self._aggregation_intervals = [60, 300, 900]  # 1min, 5min, 15min
+        self._initialize_rate_limits()
+        
+        # Start background tasks
+        asyncio.create_task(self._aggregate_metrics_loop())
+        asyncio.create_task(self._cleanup_old_metrics_loop())
+        asyncio.create_task(self._check_alerts_loop())
+
+    def _load_thresholds(self) -> Dict[str, MetricThreshold]:
+        """Load metric thresholds from configuration"""
+        try:
+            thresholds = {}
+            for metric, config in self.config.get('thresholds', {}).items():
+                thresholds[metric] = MetricThreshold(
+                    warning=config.get('warning', 0.0),
+                    error=config.get('error', 0.0),
+                    critical=config.get('critical', 0.0),
+                    comparison=config.get('comparison', 'greater'),
+                    duration=config.get('duration', 0)
+                )
+            return thresholds
+        except Exception as e:
+            logger.error(f"Failed to load thresholds: {e}")
+            return {}
+
+    async def record_metric(self, name: str, value: Any, metric_type: MetricType = MetricType.GAUGE, labels: Dict = None):
+        """Record a metric with caching"""
+        try:
+            current_time = time.time()
+            rate_limit = self._rate_limits[metric_type]
+            
+            # Check rate limit window
+            if current_time - rate_limit['last_reset'] >= rate_limit['window']:
+                rate_limit['current'] = 0
+                rate_limit['last_reset'] = current_time
+            
+            # Check rate limit
+            if rate_limit['current'] >= rate_limit['limit']:
+                logger.warning(f"Rate limit exceeded for metric {name}")
+                return
+            
+            rate_limit['current'] += 1
+            
+            # Prepare metric data
+            metric_data = {
+                'value': value,
+                'timestamp': current_time,
+                'type': metric_type.value,
+                'labels': labels or {}
+            }
+            
+            # Store in local metrics
+            if name not in self._metrics:
+                self._metrics[name] = {
+                    'current': metric_data,
+                    'history': [],
+                    'aggregates': defaultdict(list)
+                }
+            else:
+                self._metrics[name]['history'].append(self._metrics[name]['current'])
+                self._metrics[name]['current'] = metric_data
+            
+            # Cache metric data
+            cache_key = f"metric:{name}:{int(current_time)}"
+            await cache_manager.set(
+                cache_key,
+                metric_data,
+                ttl=self._get_metric_ttl(metric_type)
+            )
+            
+            # Update aggregates in cache
+            await self._update_cached_aggregates(name, value, current_time)
+            
+            # Check for alerts
+            if name in self._thresholds:
+                await self._check_threshold(name, value)
+                
+        except Exception as e:
+            logger.error(f"Failed to record metric {name}: {e}")
+
+    def _get_metric_ttl(self, metric_type: MetricType) -> int:
+        """Get TTL for metric type"""
+        ttl_map = {
+            MetricType.COUNTER: cache_manager.ttl_config['high_frequency'],
+            MetricType.GAUGE: cache_manager.ttl_config['medium_frequency'],
+            MetricType.HISTOGRAM: cache_manager.ttl_config['medium_frequency'],
+            MetricType.SUMMARY: cache_manager.ttl_config['low_frequency']
+        }
+        return ttl_map.get(metric_type, cache_manager.default_ttl)
+
+    async def _update_cached_aggregates(self, name: str, value: float, timestamp: float):
+        """Update metric aggregates in cache"""
+        try:
+            for interval in self._aggregation_intervals:
+                # Get existing aggregates from cache
+                cache_key = f"aggregate:{name}:{interval}"
+                aggregates = await cache_manager.get(cache_key, {})
+                
+                if not aggregates:
+                    aggregates = {
+                        'count': 0,
+                        'sum': 0,
+                        'min': float('inf'),
+                        'max': float('-inf'),
+                        'values': []
+                    }
+                
+                # Update aggregates
+                aggregates['count'] += 1
+                aggregates['sum'] += value
+                aggregates['min'] = min(aggregates['min'], value)
+                aggregates['max'] = max(aggregates['max'], value)
+                aggregates['values'].append(value)
+                
+                # Keep only recent values
+                cutoff_time = timestamp - interval
+                aggregates['values'] = aggregates['values'][-1000:]  # Limit history size
+                
+                # Calculate statistics
+                if aggregates['values']:
+                    aggregates['mean'] = aggregates['sum'] / aggregates['count']
+                    aggregates['std'] = float(np.std(aggregates['values']))
+                
+                # Store updated aggregates
+                await cache_manager.set(cache_key, aggregates, ttl=interval * 2)
+                
+        except Exception as e:
+            logger.error(f"Failed to update cached aggregates for {name}: {e}")
+
+    async def _check_threshold(self, metric_name: str, value: float):
+        """Check if metric value exceeds thresholds"""
+        threshold = self._thresholds.get(metric_name)
+        if not threshold:
+            return
+            
+        severity = None
+        threshold_value = None
+        
+        if threshold.comparison == "greater":
+            if value >= threshold.critical:
+                severity = MetricSeverity.CRITICAL
+                threshold_value = threshold.critical
+            elif value >= threshold.error:
+                severity = MetricSeverity.ERROR
+                threshold_value = threshold.error
+            elif value >= threshold.warning:
+                severity = MetricSeverity.WARNING
+                threshold_value = threshold.warning
+        else:  # less than
+            if value <= threshold.critical:
+                severity = MetricSeverity.CRITICAL
+                threshold_value = threshold.critical
+            elif value <= threshold.error:
+                severity = MetricSeverity.ERROR
+                threshold_value = threshold.error
+            elif value <= threshold.warning:
+                severity = MetricSeverity.WARNING
+                threshold_value = threshold.warning
+                
+        if severity:
+            await self._create_alert(
+                metric_name=metric_name,
+                severity=severity,
+                current_value=value,
+                threshold_value=threshold_value
+            )
+
+    async def _create_alert(self, metric_name: str, severity: MetricSeverity, 
+                          current_value: float, threshold_value: float):
+        """Create and process a new alert with caching"""
+        try:
+            alert = Alert(
+                id=f"alert_{int(time.time())}_{metric_name}",
+                severity=severity,
+                message=f"{metric_name} is {current_value}, threshold is {threshold_value}",
+                metric_name=metric_name,
+                current_value=current_value,
+                threshold_value=threshold_value,
+                timestamp=time.time()
+            )
+            
+            # Add to active alerts if not already present
+            alert_key = f"{metric_name}_{severity.value}"
+            if alert_key not in self._active_alerts:
+                self._active_alerts.add(alert_key)
+                self._alert_history.append(alert)
+                
+                # Cache alert
+                cache_key = f"alert:{alert.id}"
+                await cache_manager.set(
+                    cache_key,
+                    dataclasses.asdict(alert),
+                    ttl=cache_manager.ttl_config['medium_frequency']
+                )
+                
+                # Update active alerts cache
+                await cache_manager.set(
+                    "active_alerts",
+                    list(self._active_alerts),
+                    ttl=cache_manager.ttl_config['high_frequency']
+                )
+                
+                # Send alert notification
+                await self._send_alert_notification(alert)
+                
+        except Exception as e:
+            logger.error(f"Failed to create alert: {e}")
+
+    async def get_metrics(self, names: Optional[List[str]] = None) -> Dict[str, Any]:
+        """Get metrics with caching"""
+        try:
+            if names:
+                # Get metrics from cache
+                metrics = {}
+                for name in names:
+                    # Try to get from cache first
+                    cached_data = await cache_manager.get(f"metric:{name}:current")
+                    if cached_data:
+                        metrics[name] = cached_data
+                    elif name in self._metrics:
+                        metrics[name] = self._metrics[name]
+                return metrics
+                
+            return self._metrics
+            
+        except Exception as e:
+            logger.error(f"Failed to get metrics: {e}")
+            return {}
+
+    async def get_aggregated_metrics(self, 
+                                   names: Optional[List[str]] = None,
+                                   interval: int = 300) -> Dict[str, Any]:
+        """Get aggregated metrics from cache"""
+        try:
+            results = {}
+            metrics = names if names else list(self._metrics.keys())
+            
+            for name in metrics:
+                cache_key = f"aggregate:{name}:{interval}"
+                aggregates = await cache_manager.get(cache_key)
+                if aggregates:
+                    results[name] = aggregates
+                    
+            return results
+            
+        except Exception as e:
+            logger.error(f"Failed to get aggregated metrics: {e}")
+            return {}
+
+    async def get_alerts(self, 
+                        from_time: Optional[float] = None,
+                        to_time: Optional[float] = None,
+                        severity: Optional[MetricSeverity] = None) -> List[Alert]:
+        """Get filtered alerts from cache"""
+        try:
+            # Try to get alerts from cache
+            cached_alerts = await cache_manager.get("alert_history")
+            alerts = cached_alerts if cached_alerts else self._alert_history
+            
+            if from_time:
+                alerts = [a for a in alerts if a.timestamp >= from_time]
+            if to_time:
+                alerts = [a for a in alerts if a.timestamp <= to_time]
+            if severity:
+                alerts = [a for a in alerts if a.severity == severity]
+                
+            return alerts
+            
+        except Exception as e:
+            logger.error(f"Failed to get alerts: {e}")
+            return []
+
+# Global metrics collector instance
+metrics_collector = MetricsCollector()

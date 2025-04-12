@@ -1,2 +1,6 @@
 fastapi
 uvicorn[standard]
+dnspython>=2.4.2
+aiohttp>=3.9.0
+pyyaml>=6.0.1
+async-timeout>=4.0.3

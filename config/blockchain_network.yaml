@@ -2,9 +2,11 @@
 
 network:
   name: "AstraLink_Private_Network"
-  chain_id: 22625 # Unique chain ID for our network
+  chain_id: 8453  # Base chain ID
   consensus: "PoA"  # Proof of Authority
   block_time: 5  # 5 second blocks for fast eSIM operations
+  network_type: "mainnet"
+  rpc_endpoint: "https://mainnet.base.org"
 
 dns:
   domain: "quantum.api"
@@ -40,17 +42,38 @@ smart_contracts:
       address: "0x..."
     - name: "TelecomVerifier"
       address: "0x..."
+
 handshake_integration:
+  enabled: true
+  api_endpoint: "http://localhost:12037"
+  nameservers:
+    - "103.196.38.38"  # HNS.to primary
+    - "103.196.38.39"  # HNS.to secondary
+    - "172.104.213.10" # HDNS.io
+  domain: "quantum.api"
   records:
-    - type: "TXT"
-      name: "_blockchain"
-      value: "network=astralink"
-    - type: "SRV"
-      name: "_nodes"
-      target: "bootstrap.quantum.api"
-    - type: "A"
-      name: "api"
-      value: "..."
+    - name: "node1"
+      type: "A"
+      value: "10.0.1.1"
+    - name: "node2"
+      type: "A"
+      value: "10.0.1.2"
+    - name: "node3"
+      type: "A"
+      value: "10.0.1.3"
+    - name: "_api._tcp"
+      type: "SRV"
+      value: "0 5 443 api.quantum.api"
+    - name: "_blockchain._tcp"
+      type: "SRV"
+      value: "0 5 8545 rpc.quantum.api"
+    - name: "_quantum._tcp"
+      type: "SRV"
+      value: "0 5 9000 quantum.quantum.api"
+  dnssec:
+    enabled: true
+    key_algorithm: "ED25519"
+    refresh_interval: 86400  # 24 hours
 
 security:
   quantum_safe_algorithms:

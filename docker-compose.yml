@@ -7,7 +7,6 @@ services:
       context: .
       dockerfile: Dockerfile
     image: astralink/api:latest
-    container_name: astralink_api
     restart: unless-stopped
     environment:
       # Environment variables for AstraLink API
@@ -29,24 +28,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    deploy:
-      replicas: 3
-      update_config:
-        parallelism: 1
-        delay: 10s
-        order: start-first
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
-      resources:
-        limits:
-          cpus: '1'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
 
   # Quantum System service
   quantum_system:
@@ -54,7 +35,6 @@ services:
       context: .
       dockerfile: Dockerfile.quantum
     image: astralink/quantum:latest
-    container_name: astralink_quantum
     restart: unless-stopped
     environment:
       - QUANTUM_LOG_LEVEL=info
@@ -151,12 +131,34 @@ services:
       - redis_data:/data
     restart: unless-stopped
 
+  handshake-node:
+    image: handshakeorg/hsd:latest
+    container_name: astralink-hsd
+    ports:
+      - "12037:12037"  # HSD HTTP API
+      - "12038:12038"  # HSD Wallet API
+      - "53:53/udp"    # DNS
+    volumes:
+      - ./data/hsd:/root/.hsd
+    command: >
+      --http-host=0.0.0.0
+      --api-key=${HSD_API_KEY:-astralink_default_key}
+      --network=mainnet
+      --port=12038
+      --http-port=12037
+      --rs-host=0.0.0.0
+      --rs-port=53
+    environment:
+      - HSD_API_KEY=${HSD_API_KEY:-astralink_default_key}
+    restart: unless-stopped
+
 volumes:
   prometheus_data:
   grafana_data:
   elasticsearch_data:
   redis_data:
   quantum_keys:
+  hsd_data:
 
 networks:
   default:

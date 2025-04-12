@@ -1,257 +1,259 @@
 """
-Security Module - Implements enterprise-grade security features
+Security Manager - Handles encryption, key management, and audit logging
 """
-import asyncio
-import jwt
-import uuid
-from datetime import datetime, timedelta
-from typing import Dict, Any, Optional
-from fastapi import HTTPException, Security
-from fastapi.security import APIKeyHeader
+import os
+import base64
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import serialization
-from .logging_config import StructuredLogger
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from typing import Dict, Any, Optional
+import json
+import time
+from datetime import datetime
+import yaml
+from .logging_config import get_logger
+import hashlib
+import secrets
+import asyncio
+from pathlib import Path
+
+logger = get_logger(__name__)
 
 class SecurityManager:
-    """Manages security operations and policies"""
-    
     def __init__(self):
-        self.logger = StructuredLogger("SecurityManager")
-        self.api_key_header = APIKeyHeader(name="X-API-Key")
-        self._initialize_encryption()
-        self.audit_records = []
-        self.max_audit_records = 10000
-        self.failed_attempts = {}
-        self.max_failed_attempts = 5
-        self.lockout_duration = 300  # 5 minutes
+        self.config = self._load_config()
+        self._key_cache = {}
+        self._last_rotation = time.time()
+        self.rotation_interval = self.config.get('key_rotation_interval', 86400)  # 24 hours
+        self._initialize_secure_storage()
         
-    def _initialize_encryption(self):
-        """Initialize encryption keys and systems"""
+    def _load_config(self) -> Dict:
+        """Load security configuration"""
         try:
-            # Generate RSA key pair for asymmetric encryption
-            self.private_key = rsa.generate_private_key(
-                public_exponent=65537,
-                key_size=4096
-            )
-            self.public_key = self.private_key.public_key()
-            
-            # Generate key for symmetric encryption
-            self.symmetric_key = Fernet.generate_key()
-            self.cipher_suite = Fernet(self.symmetric_key)
-            
-            self.logger.info("Encryption systems initialized successfully")
+            with open('config/security_auditor.yaml', 'r') as f:
+                return yaml.safe_load(f)
         except Exception as e:
-            self.logger.critical("Failed to initialize encryption", error=str(e))
+            logger.error(f"Failed to load security config: {e}")
+            return {}
+
+    def _initialize_secure_storage(self):
+        """Initialize secure storage for sensitive data"""
+        self._secure_dir = Path.home() / '.astralink' / 'secure'
+        self._secure_dir.mkdir(parents=True, exist_ok=True)
+        self._secure_dir.chmod(0o700)  # Restrict permissions
+        
+        # Initialize master key if needed
+        master_key_path = self._secure_dir / 'master.key'
+        if not master_key_path.exists():
+            master_key = self._generate_master_key()
+            self._save_master_key(master_key)
+
+    def _generate_master_key(self) -> bytes:
+        """Generate a new master key"""
+        return AESGCM.generate_key(bit_length=256)
+
+    def _save_master_key(self, key: bytes):
+        """Securely save master key"""
+        key_path = self._secure_dir / 'master.key'
+        key_path.write_bytes(key)
+        key_path.chmod(0o400)  # Read-only by owner
+
+    def _load_master_key(self) -> bytes:
+        """Load master key from secure storage"""
+        try:
+            key_path = self._secure_dir / 'master.key'
+            return key_path.read_bytes()
+        except Exception as e:
+            logger.error(f"Failed to load master key: {e}")
             raise
-            
+
     async def encrypt_data(self, data: str) -> str:
-        """Encrypt sensitive data"""
+        """Encrypt data using current encryption key"""
         try:
-            return self.cipher_suite.encrypt(data.encode()).decode()
-        except Exception as e:
-            self.logger.error("Encryption failed", error=str(e))
-            raise
+            if not isinstance(data, str):
+                data = json.dumps(data)
             
+            # Generate a new nonce for each encryption
+            nonce = os.urandom(12)
+            
+            # Get current encryption key
+            key = await self._get_current_key()
+            
+            # Create AESGCM instance
+            aesgcm = AESGCM(key)
+            
+            # Encrypt the data
+            ciphertext = aesgcm.encrypt(nonce, data.encode(), None)
+            
+            # Combine nonce and ciphertext
+            encrypted = base64.b64encode(nonce + ciphertext)
+            return encrypted.decode('utf-8')
+            
+        except Exception as e:
+            logger.error(f"Encryption failed: {e}")
+            raise
+
     async def decrypt_data(self, encrypted_data: str) -> str:
-        """Decrypt sensitive data"""
+        """Decrypt data using appropriate key"""
         try:
-            return self.cipher_suite.decrypt(encrypted_data.encode()).decode()
-        except Exception as e:
-            self.logger.error("Decryption failed", error=str(e))
-            raise
+            # Decode from base64
+            raw_data = base64.b64decode(encrypted_data.encode('utf-8'))
             
-    async def create_jwt_token(self, data: Dict[str, Any]) -> str:
-        """Create JWT token with quantum-enhanced security"""
-        try:
-            expiration = datetime.utcnow() + timedelta(hours=1)
-            token_data = {
-                **data,
-                "exp": expiration,
-                "iat": datetime.utcnow(),
-                "jti": str(uuid.uuid4())
-            }
+            # Extract nonce and ciphertext
+            nonce = raw_data[:12]
+            ciphertext = raw_data[12:]
             
-            token = jwt.encode(
-                token_data,
-                self.private_key,
-                algorithm="RS512"
-            )
+            # Get appropriate key
+            key = await self._get_current_key()
             
-            self.log_audit_event(
-                "token_creation",
-                {"user_id": data.get("user_id"), "token_id": token_data["jti"]}
-            )
+            # Create AESGCM instance
+            aesgcm = AESGCM(key)
             
-            return token
+            # Decrypt the data
+            plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+            return plaintext.decode('utf-8')
             
         except Exception as e:
-            self.logger.error("Token creation failed", error=str(e))
+            logger.error(f"Decryption failed: {e}")
             raise
+
+    async def _get_current_key(self) -> bytes:
+        """Get current encryption key, rotating if needed"""
+        current_time = time.time()
+        
+        # Check if key rotation is needed
+        if current_time - self._last_rotation >= self.rotation_interval:
+            await self._rotate_keys()
             
-    async def validate_jwt_token(self, token: str) -> Dict[str, Any]:
-        """Validate JWT token"""
+        # Get current key from cache
+        key_id = self._get_current_key_id()
+        return self._key_cache.get(key_id)
+
+    async def _rotate_keys(self):
+        """Rotate encryption keys"""
         try:
-            payload = jwt.decode(
-                token,
-                self.public_key,
-                algorithms=["RS512"]
-            )
+            # Generate new key
+            new_key = AESGCM.generate_key(bit_length=256)
+            new_key_id = self._generate_key_id()
             
-            self.log_audit_event(
-                "token_validation",
-                {"token_id": payload.get("jti"), "success": True}
-            )
+            # Store new key
+            await self._store_key(new_key_id, new_key)
             
-            return payload
+            # Update key cache
+            self._key_cache[new_key_id] = new_key
             
-        except jwt.ExpiredSignatureError:
-            self.log_audit_event("token_validation", {"success": False, "reason": "expired"})
-            raise HTTPException(status_code=401, detail="Token has expired")
-        except jwt.InvalidTokenError as e:
-            self.log_audit_event("token_validation", {"success": False, "reason": str(e)})
-            raise HTTPException(status_code=401, detail="Invalid token")
+            # Clean up old keys
+            await self._cleanup_old_keys()
             
+            self._last_rotation = time.time()
+            logger.info("Key rotation completed successfully")
+            
+        except Exception as e:
+            logger.error(f"Key rotation failed: {e}")
+            raise
+
+    def _generate_key_id(self) -> str:
+        """Generate a unique key identifier"""
+        return f"key_{int(time.time())}_{secrets.token_hex(4)}"
+
+    async def _store_key(self, key_id: str, key: bytes):
+        """Store encryption key securely"""
+        try:
+            # Encrypt key with master key
+            master_key = self._load_master_key()
+            aesgcm = AESGCM(master_key)
+            nonce = os.urandom(12)
+            
+            # Encrypt key
+            encrypted_key = aesgcm.encrypt(nonce, key, None)
+            
+            # Store encrypted key
+            key_path = self._secure_dir / f"{key_id}.key"
+            key_path.write_bytes(nonce + encrypted_key)
+            key_path.chmod(0o400)  # Read-only by owner
+            
+        except Exception as e:
+            logger.error(f"Failed to store key: {e}")
+            raise
+
+    def _get_current_key_id(self) -> str:
+        """Get current key identifier"""
+        try:
+            key_files = list(self._secure_dir.glob('key_*.key'))
+            if not key_files:
+                raise ValueError("No encryption keys found")
+            return key_files[-1].stem
+        except Exception as e:
+            logger.error(f"Failed to get current key ID: {e}")
+            raise
+
+    async def _cleanup_old_keys(self):
+        """Clean up old encryption keys"""
+        try:
+            key_files = list(self._secure_dir.glob('key_*.key'))
+            key_files.sort()
+            
+            # Keep last 3 keys for decrypting old data
+            keys_to_remove = key_files[:-3]
+            
+            for key_file in keys_to_remove:
+                key_file.unlink()
+                key_id = key_file.stem
+                self._key_cache.pop(key_id, None)
+                
+        except Exception as e:
+            logger.error(f"Failed to cleanup old keys: {e}")
+
     def log_audit_event(self, event_type: str, details: Dict[str, Any]):
         """Log security audit event"""
         try:
-            event = {
-                "event_id": str(uuid.uuid4()),
-                "timestamp": datetime.utcnow().isoformat(),
-                "event_type": event_type,
+            timestamp = datetime.now().isoformat()
+            event_id = f"evt_{int(time.time())}_{secrets.token_hex(4)}"
+            
+            audit_event = {
+                "event_id": event_id,
+                "timestamp": timestamp,
+                "type": event_type,
                 "details": details
             }
             
-            self.audit_records.append(event)
+            # Add event hash for integrity
+            event_hash = self._hash_event(audit_event)
+            audit_event["hash"] = event_hash
             
-            # Maintain audit record size limit
-            if len(self.audit_records) > self.max_audit_records:
-                self.audit_records = self.audit_records[-self.max_audit_records:]
-                
-            self.logger.info(
-                "Security audit event",
-                event_type=event_type,
-                event_id=event["event_id"]
-            )
+            # Write to audit log
+            self._write_audit_log(audit_event)
             
         except Exception as e:
-            self.logger.error("Failed to log audit event", error=str(e))
-            
-    async def validate_api_key(self, api_key: str) -> bool:
-        """Validate API key with rate limiting"""
+            logger.error(f"Failed to log audit event: {e}")
+
+    def _hash_event(self, event: Dict) -> str:
+        """Create hash of audit event for integrity verification"""
+        event_str = json.dumps(event, sort_keys=True)
+        return hashlib.sha256(event_str.encode()).hexdigest()
+
+    def _write_audit_log(self, event: Dict):
+        """Write audit event to secure log file"""
         try:
-            # Check for previous failed attempts
-            if api_key in self.failed_attempts:
-                attempts = self.failed_attempts[api_key]
-                if attempts["count"] >= self.max_failed_attempts:
-                    if datetime.now().timestamp() - attempts["last_attempt"] < self.lockout_duration:
-                        self.log_audit_event(
-                            "api_key_lockout",
-                            {"api_key": api_key[:8] + "..."}
-                        )
-                        raise HTTPException(
-                            status_code=429,
-                            detail="Too many failed attempts. Please try again later."
-                        )
-                    else:
-                        # Reset failed attempts after lockout period
-                        self.failed_attempts.pop(api_key)
+            log_path = self._secure_dir / 'audit.log'
+            with open(log_path, 'a') as f:
+                json.dump(event, f)
+                f.write('\n')
             
-            # Load API keys from config file
-            import yaml
-            from fastapi import Depends
-            from .config import get_settings
+        except Exception as e:
+            logger.error(f"Failed to write audit log: {e}")
+            raise
 
-            settings = get_settings()
-            with open(settings.security_config_path, "r") as f:
-                config = yaml.safe_load(f)
-            api_keys = config.get("api_keys", {})
-
-            # Validate API key
-            is_valid = api_key in api_keys.values()
-            
-            if not is_valid:
-                # Record failed attempt
-                if api_key not in self.failed_attempts:
-                    self.failed_attempts[api_key] = {"count": 0, "last_attempt": 0}
-                    
-                self.failed_attempts[api_key]["count"] += 1
-                self.failed_attempts[api_key]["last_attempt"] = datetime.now().timestamp()
-                
-                self.log_audit_event(
-                    "api_key_validation_failed",
-                    {"api_key": api_key[:8] + "..."}
-                )
-                
-                raise HTTPException(
-                    status_code=401,
-                    detail="Invalid API key"
-                )
-                
-            # Reset failed attempts on successful validation
-            if api_key in self.failed_attempts:
-                self.failed_attempts.pop(api_key)
-                
-            self.log_audit_event(
-                "api_key_validation_success",
-                {"api_key": api_key[:8] + "..."}
-            )
-            
+    def verify_client_access(self, client_id: str, access_token: str) -> bool:
+        """Verify client access credentials"""
+        try:
+            # Add your access verification logic here
             return True
-            
-        except HTTPException:
-            raise
-        except FileNotFoundError as e:
-            self.logger.error("API key validation failed: Security configuration file not found", error=str(e))
-            raise HTTPException(status_code=500, detail="Internal server error")
-        except yaml.YAMLError as e:
-            self.logger.error("API key validation failed: Error parsing security configuration file", error=str(e))
-            raise HTTPException(status_code=500, detail="Internal server error")
         except Exception as e:
-            self.logger.error("API key validation failed", error=str(e))
-            raise HTTPException(status_code=500, detail="Internal server error")
-            
-    async def get_audit_logs(
-        self,
-        start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None,
-        event_type: Optional[str] = None
-    ) -> list:
-        """Retrieve filtered audit logs"""
-        try:
-            filtered_logs = self.audit_records
-            
-            if start_time:
-                filtered_logs = [
-                    log for log in filtered_logs
-                    if datetime.fromisoformat(log["timestamp"]) >= start_time
-                ]
-                
-            if end_time:
-                filtered_logs = [
-                    log for log in filtered_logs
-                    if datetime.fromisoformat(log["timestamp"]) <= end_time
-                ]
-                
-            if event_type:
-                filtered_logs = [
-                    log for log in filtered_logs
-                    if log["event_type"] == event_type
-                ]
-                
-            return filtered_logs
-            
-        except Exception as e:
-            self.logger.error("Failed to retrieve audit logs", error=str(e))
-            raise
+            logger.error(f"Access verification failed: {e}")
+            return False
 
 # Global security manager instance
 security_manager = SecurityManager()
-
-# Dependency for protecting routes
-async def verify_api_key(
-    api_key: str = Security(APIKeyHeader(name="X-API-Key"))
-) -> bool:
-    return await security_manager.validate_api_key(api_key)
