@@ -4,7 +4,7 @@
 
 ### Python File Verification
 - **Issue**: The initial assessment stated that no Python files were found, which is incorrect.
-- **Task**: Verify the list of Python files and correct the documentation.
+- **Task**: Verify the list of Python files and confirm that the following directories contain Python files: ai/, api/, app/, compliance/, dashboard/, governance/, monitoring/, network/, orchestration/, sdk/examples/, test/, and tools/.
 
 ### TODOs in Codebase
 
