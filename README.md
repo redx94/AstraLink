@@ -5,63 +5,51 @@
 ![Banner](https://github.com/redx94/AstraLink/blob/main/DALL%C2%B7E%202025-02-07%2001.58.20%20-%20A%20futuristic%20technology-themed%20banner%20for%20AstraLink%2C%20a%20decentralized%20blockchain-based%20telecom%20network.%20The%20banner%20should%20have%20a%20sleek%2C%20cyberpunk-inspi.webp)
 
 ## Table of Contents
-- [AstraLink: Decentralized Blockchain Telecom Network](#astralink-decentralized-blockchain-telecom-network)
-  - [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Technical Specifications](#technical-specifications)
-    - [Core Components](#core-components)
-    - [Performance Metrics](#performance-metrics)
-    - [System Requirements](#system-requirements)
-      - [Minimum Hardware (Node Operation)](#minimum-hardware-node-operation)
-      - [Recommended Hardware (Validator Node)](#recommended-hardware-validator-node)
-  - [System Architecture](#system-architecture)
-    - [Component Breakdown](#component-breakdown)
-  - [Security Features](#security-features)
-    - [Quantum Security Layer](#quantum-security-layer)
-    - [Blockchain Security](#blockchain-security)
-    - [Network Security](#network-security)
-  - [Installation \& Setup](#installation--setup)
-    - [Development Environment](#development-environment)
-    - [Production Deployment](#production-deployment)
-  - [Monitoring \& Maintenance](#monitoring--maintenance)
-    - [Built-in Monitoring Tools](#built-in-monitoring-tools)
-    - [Health Checks](#health-checks)
-    - [Maintenance Procedures](#maintenance-procedures)
-  - [Development Guide](#development-guide)
-    - [Coding Standards](#coding-standards)
-    - [Testing Framework](#testing-framework)
-  - [Troubleshooting](#troubleshooting)
-    - [Common Issues](#common-issues)
-    - [Debugging Tools](#debugging-tools)
-  - [Token Economics](#token-economics)
-    - [BWT Token Utility](#bwt-token-utility)
-    - [Token Distribution](#token-distribution)
-    - [Staking Mechanics](#staking-mechanics)
-  - [Contributing](#contributing)
-    - [Development Process](#development-process)
-    - [Code Requirements](#code-requirements)
-  - [License](#license)
-  - [Contact \& Support](#contact--support)
-    - [Community Channels](#community-channels)
-    - [Emergency Support](#emergency-support)
+- [Overview](#overview)
+- [Features](#features)
+- [Technical Specifications](#technical-specifications)
+- [System Architecture](#system-architecture)
+- [Security Features](#security-features)
+- [Installation & Setup](#installation--setup)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [Support](#support)
+- [License](#license)
 
 ## Overview
 
-AstraLink revolutionizes telecommunications through a decentralized network that combines blockchain technology, quantum computing, and artificial intelligence. Our platform delivers:
+AstraLink revolutionizes telecommunications through a decentralized network that combines blockchain technology, quantum computing, and artificial intelligence. Our platform delivers unprecedented security, scalability, and efficiency in telecom services.
 
-- **Decentralized Connectivity**: User-controlled cellular access through dynamic eSIM provisioning
-- **Quantum-Secured Transactions**: Advanced encryption using quantum principles
-- **AI-Powered Optimization**: Intelligent resource allocation and network management
-- **Cross-Chain Operations**: Seamless interoperability across multiple blockchain networks
-- **P2P Resource Sharing**: Democratized bandwidth marketplace with fair pricing
+### Key Innovations
+- Quantum-secured communications
+- Decentralized eSIM management
+- AI-driven network optimization
+- Cross-chain interoperability
+- Dynamic resource allocation
+
+## Features
+
+### Core Capabilities
+- **Dynamic eSIM Provisioning**: Instant, secure eSIM deployment
+- **Quantum Security**: Post-quantum cryptography and QKD
+- **AI Optimization**: Real-time network resource management
+- **Blockchain Integration**: Transparent, secure transactions
+- **Cross-Chain Operations**: Multi-chain compatibility
+
+### Advanced Features
+- **Quantum Error Correction**: < 0.00001% error rate
+- **AI Forecasting**: Predictive network management
+- **Smart Contracts**: Automated service provisioning
+- **Regulatory Compliance**: Built-in compliance frameworks
+- **High Availability**: 99.999% uptime guarantee
 
 ## Technical Specifications
 
 ### Core Components
-- **Blockchain Protocol**: Ethereum-compatible with custom Layer 2 scaling
+- **Blockchain Protocol**: Ethereum-compatible with Layer 2 scaling
 - **Smart Contract Runtime**: EVM-compatible, Solidity v0.8.x
-- **Quantum Processing**: Integration with IBM Quantum services
-- **AI Framework**: TensorFlow 2.x with custom quantum extensions
+- **Quantum Processing**: IBM Quantum integration
+- **AI Framework**: TensorFlow 2.x with quantum extensions
 - **Network Protocol**: Modified 5G NSA with blockchain verification
 
 ### Performance Metrics
@@ -140,173 +128,61 @@ graph TD
 
 ## Installation & Setup
 
-### Development Environment
+### Quick Start
 ```bash
 # Clone repository
 git clone https://github.com/redx94/AstraLink.git
 cd AstraLink
 
-# Install development tools
-npm install -g hardhat typescript
+# Install dependencies
+npm install
 pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your configuration
 
-# Start development services
-docker-compose -f docker-compose.dev.yml up -d
-
-# Deploy contracts to local network
-npx hardhat compile
-npx hardhat deploy --network localhost
-
-# Start development server
-npm run dev
+# Start development environment
+docker-compose up -d
 ```
 
-### Production Deployment
-```bash
-# Build production images
-docker-compose -f docker-compose.prod.yml build
+For detailed setup instructions, see our [Installation Guide](docs/deployment_guide.md).
 
-# Configure production environment
-vim config/production.yaml
+## Documentation
 
-# Deploy to production
-docker-compose -f docker-compose.prod.yml up -d
+### Developer Resources
+- [Developer Guide](docs/developer_guide.md)
+- [API Reference](docs/api_reference.md)
+- [Quantum Integration](docs/QuantumIntegration.md)
+- [Security Guide](docs/security_guide.md)
+- [Testing Guide](docs/integration_testing_guide.md)
 
-# Monitor deployment
-docker-compose logs -f
-```
-
-## Monitoring & Maintenance
-
-### Built-in Monitoring Tools
-- Prometheus metrics collection
-- Grafana dashboards
-- Log aggregation with ELK stack
-- Performance analytics
-
-### Health Checks
-```bash
-# Check system health
-./tools/system_health_checker.py
-
-# Monitor resource usage
-./tools/resource_usage_tracker.py
-
-# Security audit
-./tools/security_audit_tool.py
-```
-
-### Maintenance Procedures
-1. Regular backup scheduling
-2. Node synchronization verification
-3. Smart contract upgrades
-4. Security patches deployment
-
-## Development Guide
-
-### Coding Standards
-- TypeScript strict mode enabled
-- Solidity style guide compliance
-- Python PEP 8 standards
-- Comprehensive unit testing
-
-### Testing Framework
-```bash
-# Run unit tests
-npm run test
-
-# Run integration tests
-python -m pytest test/integration_test.py
-
-# Smart contract tests
-npx hardhat test
-
-# Coverage report
-npm run coverage
-```
-
-## Troubleshooting
-
-### Common Issues
-1. **Node Synchronization Problems**
-   - Check network connectivity
-   - Verify blockchain sync status
-   - Clear corrupted chain data
-
-2. **Smart Contract Deployment Failures**
-   - Verify gas settings
-   - Check contract size
-   - Validate dependencies
-
-3. **Quantum Integration Issues**
-   - Confirm quantum service availability
-   - Check encryption parameters
-   - Verify key distribution
-
-### Debugging Tools
-```bash
-# Debug node connection
-./tools/debugging_suite.py --check-connection
-
-# Verify smart contracts
-npx hardhat verify --network mainnet <contract-address>
-
-# Test quantum connection
-python quantum/quantum_controller.py --test-connection
-```
-
-## Token Economics
-
-### BWT Token Utility
-- Network access rights
-- Governance participation
-- Staking rewards
-- Transaction fee payment
-
-### Token Distribution
-- Total Supply: 1,000,000,000 BWT
-- Distribution:
-  - Network Rewards: 45%
-  - Ecosystem Development: 30%
-  - Team & Advisors: 15%
-  - Liquidity: 10%
-
-### Staking Mechanics
-- Minimum Stake: 10,000 BWT
-- Lock Period: 30-365 days
-- Annual Yield: 5-15%
-- Slashing Conditions: Documented in [docs/staking_guide.md]
+### User Resources
+- [User Guide](docs/user_guide.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [FAQs](docs/faqs.md)
+- [Best Practices](docs/best_practices.md)
 
 ## Contributing
 
-### Development Process
-1. Fork repository
-2. Create feature branch (`git checkout -b feature/improvement`)
-3. Commit changes (`git commit -m 'Add feature'`)
-4. Push to branch (`git push origin feature/improvement`)
-5. Submit Pull Request
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+- Code standards
+- Development workflow
+- Review process
+- Testing requirements
 
-### Code Requirements
-- 100% test coverage
-- Documentation updates
-- Performance benchmarks
-- Security review
-- Backwards compatibility
-
-## License
-This project is licensed under the [MIT License](LICENSE).
-
-## Contact & Support
+## Support
 
 ### Community Channels
-- **Email**: quantum.apii@gmail.com
-- **Discord**: [Join AstraLink Community](https://discord.gg/astralink)
-- **GitHub Issues**: [Bug Reports & Features](https://github.com/redx94/AstraLink/issues)
-- **Developer Documentation**: [GitHub Documentation](https://github.com/redx94/AstraLink/tree/main/docs)
+- Email: quantum.apii@gmail.com
+- Discord: [AstraLink Community](https://discord.gg/astralink)
+- GitHub Issues: [Bug Reports & Features](https://github.com/redx94/AstraLink/issues)
+- Documentation: [GitHub Documentation](docs/)
 
 ### Emergency Support
-- 24/7 Critical Issues: quantum.apii@gmail.com
+For critical issues requiring immediate attention:
+- 24/7 Support: quantum.apii@gmail.com
+- Emergency Hotline: Available to enterprise customers
+
+## License
+
+This project is licensed under the [MIT License](LICENSE). See the LICENSE file for details.

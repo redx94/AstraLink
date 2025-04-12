@@ -2,109 +2,198 @@
 
 ## Introduction
 
-Welcome to the AstraLink Developer Guide. This guide is designed to help developers understand the architecture, coding standards, and best practices for contributing to the AstraLink project. AstraLink is a decentralized blockchain-based telecom network that leverages encryption and modular design principles to facilitate secure communications.
+Welcome to the AstraLink Developer Guide. This comprehensive guide will help you understand the architecture, development workflow, and best practices for contributing to AstraLink's revolutionary telecom infrastructure.
+
+## Development Environment Setup
+
+### Prerequisites
+- Node.js v18+
+- Python 3.9+
+- Docker and Docker Compose
+- Hardhat development framework
+- VS Code with Solidity extension
+- Git
+
+### Initial Setup
+1. **Clone the Repository**
+```bash
+git clone https://github.com/redx94/AstraLink.git
+cd AstraLink
+```
+
+2. **Install Dependencies**
+```bash
+# Install JavaScript dependencies
+npm install
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install development tools
+npm install -g hardhat typescript @openzeppelin/contracts
+```
+
+3. **Configure Development Environment**
+```bash
+# Copy environment configuration
+cp .env.example .env
+
+# Configure local environment variables
+# Edit .env with your settings
+```
 
 ## Project Structure
 
-The project is organized into several key directories:
+### Core Components
+```
+├── ai/                 # AI and ML components
+├── api/               # REST and GraphQL APIs
+├── app/              # Core application logic
+├── blockchain/       # Blockchain components
+├── cellular/        # Cellular network integration
+├── compliance/     # Regulatory compliance
+├── config/        # Configuration files
+├── contracts/    # Smart contracts
+├── quantum/     # Quantum computing modules
+└── tools/      # Development utilities
+```
 
-- **ai**: Contains AI-related modules and scripts.
-- **api**: API-related files and endpoints.
-- **app**: Main application files.
-- **astra-genesis**: Initial setup and configuration files.
-- **compliance**: Compliance-related scripts and documentation.
-- **config**: Configuration files for various components.
-- **contracts**: Smart contract files.
-- **crypto**: Cryptographic utilities and scripts.
-- **dashboard**: Dashboard-related files.
-- **decentralized_resources**: Decentralized resource management contracts.
-- **deploy**: Deployment scripts.
-- **docker_open5gs**: Docker configurations for Open5GS.
-- **docs**: Documentation files.
-- **governance**: Governance-related scripts and documentation.
-- **holography**: Holography-related files.
-- **infrastructure**: Infrastructure-related scripts and documentation.
-- **mining**: Mining-related scripts and documentation.
-- **monitoring**: Monitoring-related scripts and documentation.
-- **network**: Network-related scripts and documentation.
-- **networking**: Networking-related scripts and documentation.
-- **orchestration**: Orchestration-related scripts and documentation.
-- **quantum_network**: Quantum network-related scripts and documentation.
-- **sdk**: SDK-related files.
-- **solidity**: Solidity-related files.
-- **test**: Test-related files.
-- **tools**: Various tools and utilities.
+## Development Workflow
+
+### 1. Branch Management
+- `main`: Production-ready code
+- `develop`: Integration branch
+- `feature/*`: New features
+- `bugfix/*`: Bug fixes
+- `release/*`: Release preparation
+
+### 2. Development Process
+1. Create feature branch from `develop`
+2. Implement changes with tests
+3. Submit pull request
+4. Pass code review
+5. Merge to `develop`
+
+### 3. Testing Requirements
+- Unit tests for all new code
+- Integration tests for component interactions
+- End-to-end tests for critical paths
+- Performance benchmarks for optimizations
 
 ## Coding Standards
 
 ### General Guidelines
+- Use TypeScript for frontend development
+- Follow PEP 8 for Python code
+- Implement proper error handling
+- Write comprehensive documentation
+- Maintain test coverage above 80%
 
-- **Consistency**: Follow the existing coding style and conventions.
-- **Documentation**: Ensure all functions and classes have docstrings.
-- **Testing**: Write unit tests for all new functionality.
-- **Security**: Follow security best practices, especially in cryptographic operations.
+### Smart Contract Development
+- Follow Solidity style guide
+- Implement security best practices
+- Use OpenZeppelin contracts when possible
+- Include comprehensive tests
+- Document all functions with NatSpec
 
-### Solidity
+### Python Development
+- Use type hints
+- Implement proper logging
+- Follow object-oriented principles
+- Use async/await for I/O operations
+- Document with docstrings
 
-- **Version**: Use Solidity version ^0.8.0.
-- **Imports**: Use relative imports for internal dependencies.
-- **Naming**: Use camelCase for functions and variables, and PascalCase for contracts and structs.
-- **Comments**: Use NatSpec format for comments.
-
-### Python
-
-- **Style Guide**: Follow PEP 8.
-- **Imports**: Use absolute imports.
-- **Logging**: Use the `logging` module for logging.
-- **Type Hints**: Use type hints for function arguments and return types.
+### Testing Standards
+- Write deterministic tests
+- Mock external dependencies
+- Use proper test fixtures
+- Implement proper cleanup
+- Test edge cases thoroughly
 
 ## Security Best Practices
 
-### Cryptographic Operations
+### Code Security
+- Input validation
+- Output sanitization
+- Proper error handling
+- Secure dependency management
+- Regular security audits
 
-- **Libraries**: Use well-vetted cryptographic libraries (e.g., PyCryptodome, Python cryptography package).
-- **Key Management**: Use hardware security modules (HSMs) or secure enclaves for key storage.
-- **Randomness**: Use high-entropy sources for random number generation.
+### Quantum Security
+- Post-quantum cryptography
+- Quantum key distribution
+- Entanglement protocols
+- Error correction implementation
 
-### Input Validation
+### Smart Contract Security
+- Re-entrancy protection
+- Access control implementation
+- Gas optimization
+- Upgrade mechanisms
+- Emergency stops
 
-- **Strict Checks**: Implement strict type and range checks on all user and network inputs.
-- **Exception Handling**: Use structured exception handling to avoid leaking sensitive details.
+## CI/CD Pipeline
 
-## Testing and CI/CD
+### Automated Testing
+- Unit test execution
+- Integration test suite
+- Security scanning
+- Dependency checking
+- Code coverage reporting
 
-### Unit Tests
+### Deployment Process
+1. Build verification
+2. Test execution
+3. Security scanning
+4. Staging deployment
+5. Production release
+6. Post-deployment verification
 
-- **Coverage**: Ensure all new functionality has corresponding unit tests.
-- **Mocking**: Use mocking libraries to isolate dependencies.
+## Debugging and Troubleshooting
 
-### Integration Tests
+### Development Tools
+- Hardhat console
+- Python debugger
+- Network analyzers
+- Performance profilers
+- Monitoring dashboards
 
-- **End-to-End**: Write end-to-end tests to ensure components work together.
-- **Environment**: Use isolated environments for testing.
+### Common Issues
+- Network connectivity
+- Smart contract deployment
+- Quantum integration
+- Performance bottlenecks
+- Security configurations
 
-### CI/CD Pipeline
+## Contributing Guidelines
 
-- **Automation**: Automate testing and deployment using CI/CD tools.
-- **Monitoring**: Monitor test results and deployment status.
+### Pull Request Process
+1. Create descriptive PR
+2. Include test coverage
+3. Update documentation
+4. Request code review
+5. Address feedback
+6. Merge after approval
 
-## Contributing
+### Documentation Requirements
+- Code comments
+- API documentation
+- Architecture updates
+- Deployment guides
+- Usage examples
 
-### Setup
+## Support and Resources
 
-1. **Clone the Repository**: `git clone https://github.com/yourusername/AstraLink.git`
-2. **Install Dependencies**: `npm install` or `pip install -r requirements.txt`
-3. **Run Tests**: `npm test` or `pytest`
+### Community Channels
+- GitHub Discussions
+- Discord Server
+- Developer Forum
+- Technical Blog
+- Monthly Calls
 
-### Making Changes
-
-1. **Create a Branch**: `git checkout -b feature/your-feature`
-2. **Make Changes**: Implement your changes.
-3. **Write Tests**: Add tests for your changes.
-4. **Commit Changes**: `git commit -m "Your commit message"`
-5. **Push Changes**: `git push origin feature/your-feature`
-6. **Create a Pull Request**: Open a pull request on GitHub.
-
-## Conclusion
-
-Thank you for contributing to AstraLink. By following these guidelines, you can help ensure the project remains secure, maintainable, and scalable.
+### Additional Resources
+- API Reference
+- Architecture Guide
+- Security Docs
+- Deployment Guide
+- Tutorials

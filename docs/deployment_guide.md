@@ -1,163 +1,340 @@
-# AstraLink Node Deployment Guide
-===============================
+# AstraLink Deployment Guide
 
-This guide provides step-by-step instructions for deploying AstraLink nodes, covering both local and remote deployment scenarios.
+## Overview
+
+This guide provides comprehensive instructions for deploying AstraLink nodes in various configurations. Whether you're setting up a validator node, edge node, or research facility node, you'll find detailed procedures and requirements here.
+
+## Node Types
+
+### 1. Validator Node
+- Primary blockchain validation
+- Transaction processing
+- Network consensus
+- Quantum security verification
+
+### 2. Edge Node
+- Local service delivery
+- Content caching
+- Quantum-safe routing
+- Resource optimization
+
+### 3. Research Facility Node
+- Quantum experimentation
+- AI model training
+- Protocol development
+- Performance testing
 
 ## Prerequisites
-- A Linux-based system (Ubuntu, Debian, CentOS)
-- Root privileges
-- Python 3.7+
-- Basic knowledge of command-line operations
-- (For remote deployment) SSH access to the target node
 
-## 1. Local Deployment
----------------------
+### Hardware Requirements
 
-### 1.1. Clone the AstraLink Repository
+#### Validator Node
+- CPU: 16+ cores, 3.5GHz+
+- RAM: 64GB DDR4
+- Storage: 4TB NVMe SSD (RAID 1)
+- Network: 10Gbps symmetric
+- GPU: NVIDIA RTX 4090 or equivalent
+
+#### Edge Node
+- CPU: 8+ cores, 3.0GHz+
+- RAM: 32GB DDR4
+- Storage: 2TB NVMe SSD
+- Network: 1Gbps symmetric
+- GPU: NVIDIA RTX 3080 or equivalent
+
+#### Research Node
+- CPU: 32+ cores, 4.0GHz+
+- RAM: 128GB DDR4
+- Storage: 8TB NVMe SSD (RAID 5)
+- Network: 100Gbps symmetric
+- GPU: 2x NVIDIA RTX 4090 or equivalent
+
+### Software Requirements
+- Ubuntu 22.04 LTS or newer
+- Docker 24.0+
+- Python 3.9+
+- Node.js 18+
+- CUDA 12.0+
+
+### Network Requirements
+- Static IP address
+- Open ports:
+  - 8545 (JSON-RPC)
+  - 30303 (P2P)
+  - 443 (HTTPS)
+  - 9090 (Metrics)
+
+## Deployment Process
+
+### 1. System Preparation
+
+#### Update System
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y build-essential python3-dev
+```
+
+#### Install Dependencies
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Install Python requirements
+python3 -m pip install -r requirements.txt
+
+# Install Node.js
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt install -y nodejs
+```
+
+### 2. Node Installation
+
+#### Clone Repository
 ```bash
 git clone https://github.com/redx94/AstraLink.git
 cd AstraLink
 ```
 
-### 1.2. Run the Installation Script
+#### Configure Environment
 ```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit configuration
+nano .env
+
+# Configuration example:
+NODE_TYPE=validator
+NETWORK=mainnet
+P2P_PORT=30303
+RPC_PORT=8545
+```
+
+#### Deploy Node
+```bash
+# Run installation script
 sudo bash deploy/install.sh
+
+# Verify installation
+sudo systemctl status astralink-*
 ```
 
-### 1.3. Select Deployment Environment
-The script will prompt you to select a deployment environment:
-1. Development (local testing, mock hardware)
-2. Testnet (real hardware, test network)
-3. Mainnet (production deployment)
+### 3. Node Configuration
 
-Choose the appropriate option based on your needs.
-
-### 1.4. Configure Environment Variables (if Mainnet)
-If you selected Mainnet, the script will prompt you for:
-- Node IPv4 address
-- Node IPv6 address
-
-Enter the correct values for your node.
-
-### 1.5. Review Installation Summary
-The script will display a summary of the installation, including:
-- Environment
-- Configuration file location
-- Service status
-- AppArmor profiles
-
-### 1.6. Access Grafana Dashboards
-Once the installation is complete, access the Grafana dashboards by opening your web browser and navigating to:
+#### Validator Node
+```yaml
+network:
+  node_type: validator
+  role: consensus
+  stake_amount: 100000
+  
+quantum:
+  error_correction: true
+  key_rotation: "12h"
+  
+security:
+  encryption: "Kyber-1024"
+  authentication: "Dilithium-5"
 ```
-http://<node_ip>:3000
+
+#### Edge Node
+```yaml
+network:
+  node_type: edge
+  cache_size: "500GB"
+  max_connections: 10000
+  
+quantum:
+  error_correction: true
+  local_qkd: true
+  
+performance:
+  cache_strategy: "quantum_assisted"
+  load_balancing: true
 ```
-(Replace `<node_ip>` with the IP address of your node)
 
-## 2. Remote Deployment
-----------------------
+#### Research Node
+```yaml
+network:
+  node_type: research
+  experimental: true
+  metrics_interval: "1s"
+  
+quantum:
+  error_correction: "surface_code"
+  entanglement_pairs: 4096
+  
+security:
+  encryption: "post_quantum"
+  isolation: true
+```
 
-### 2.1. Prepare the Remote Node
-Ensure the remote node meets the prerequisites and has SSH access enabled.
+### 4. Security Setup
 
-### 2.2. Copy the AstraLink Repository
-Copy the AstraLink repository to the remote node using `scp` or a similar tool:
+#### Firewall Configuration
 ```bash
-scp -r AstraLink root@<node_ip>:/opt/
+# Allow required ports
+sudo ufw allow 30303/tcp
+sudo ufw allow 8545/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
 ```
-(Replace `<node_ip>` with the IP address of the remote node)
 
-### 2.3. Create a Configuration File
-Create a configuration file for the remote node based on the templates in `config/templates/`. For example, to create a mainnet configuration:
+#### SSL Certificate
 ```bash
-cp config/templates/mainnet.yaml remote_config.yaml
-```
-Edit the `remote_config.yaml` file and replace the placeholder values (e.g., `${NODE_IP}`, `${NODE_IPV6}`) with the correct values for the remote node.
+# Install certbot
+sudo apt install -y certbot
 
-### 2.4. Run the Remote Deployment Script
-Run the `deploy/install.sh` script on the remote node using SSH:
+# Generate certificate
+sudo certbot certonly --standalone -d node.yourdomain.com
+```
+
+#### Quantum Security
 ```bash
-ssh root@<node_ip> "bash /opt/AstraLink/deploy/install.sh --remote --config /opt/AstraLink/remote_config.yaml"
+# Initialize quantum security
+astralink-quantum-init --node-type validator
+
+# Verify quantum state
+astralink-quantum-verify --full
 ```
-(Replace `<node_ip>` with the IP address of the remote node)
 
-### 2.5. Monitor the Installation
-The installation script will output progress information to the console. Monitor the output for any errors.
+### 5. Monitoring Setup
 
-### 2.6. Access Grafana Dashboards
-Once the installation is complete, access the Grafana dashboards by opening your web browser and navigating to:
+#### Prometheus Configuration
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'astralink'
+    static_configs:
+      - targets: ['localhost:9090']
 ```
-http://<node_ip>:3000
-```
-(Replace `<node_ip>` with the IP address of the remote node)
 
-## 3. Post-Deployment Configuration
---------------------------------
-
-### 3.1. Configure Grafana Data Source
-Configure Grafana to use Prometheus as a data source. This typically involves:
-- Installing Prometheus
-- Configuring Prometheus to scrape metrics from the AstraLink nodes
-- Adding Prometheus as a data source in Grafana
-
-### 3.2. Customize AppArmor Profiles
-Customize the AppArmor profiles in `/etc/apparmor.d/local/astralink` to further restrict the capabilities of the AstraLink services.
-
-### 3.3. Monitor System Logs
-Monitor the system logs for any errors or warnings related to the AstraLink services. Use the following command to view the logs:
+#### Grafana Dashboard
 ```bash
-journalctl -u astralink-node
+# Install Grafana
+sudo apt install -y grafana
+
+# Import dashboards
+astralink-dashboard-import
 ```
 
-## 4. Troubleshooting
---------------------
+### 6. Post-Installation
 
-### 4.1. Installation Errors
-If you encounter any errors during the installation process, check the following:
-- Ensure you have root privileges
-- Verify that all dependencies are installed
-- Check the installation script output for error messages
-
-### 4.2. Service Startup Failures
-If any of the AstraLink services fail to start, check the system logs for error messages. Use the following command to view the logs for a specific service:
+#### Health Check
 ```bash
-journalctl -u <service_name>
+# Verify node status
+astralink-health-check --full
+
+# Check synchronization
+astralink-sync-status
 ```
-(Replace `<service_name>` with the name of the service, e.g., `astralink-quantum`)
 
-### 4.3. Network Connectivity Issues
-If you experience any network connectivity issues, check the following:
-- Ensure that the node has a valid IP address and can connect to the internet
-- Verify that the firewall is configured correctly
-- Check the DNS settings
+#### Performance Tuning
+```bash
+# Optimize system
+sudo astralink-tune-system
 
-### 4.4. Quantum Operations Failures
-If you encounter any issues with quantum operations, check the following:
-- Ensure that the system meets the quantum requirements
-- Verify that the TPM is functioning correctly
-- Check the quantum service logs for error messages
+# Verify optimizations
+astralink-benchmark
+```
 
-## 5. Security Best Practices
---------------------------
+## Maintenance Procedures
 
-### 5.1. Keep the System Up-to-Date
-Regularly update the system with the latest security patches.
+### Regular Maintenance
 
-### 5.2. Use Strong Passwords
-Use strong, unique passwords for all user accounts.
+#### Daily Tasks
+- Monitor system health
+- Check error rates
+- Verify synchronization
+- Review security logs
 
-### 5.3. Enable Two-Factor Authentication
-Enable two-factor authentication for all user accounts.
+#### Weekly Tasks
+- Update software
+- Backup data
+- Check performance
+- Rotate keys
 
-### 5.4. Monitor System Logs
-Regularly monitor the system logs for any suspicious activity.
+#### Monthly Tasks
+- Security audit
+- Performance optimization
+- Hardware diagnostics
+- Compliance review
 
-### 5.5. Restrict Network Access
-Restrict network access to the AstraLink services to only the necessary ports and IP addresses.
+### Emergency Procedures
 
-### 5.6. Securely Store Keys and Certificates
-Securely store all keys and certificates used by the AstraLink services.
+#### Quick Recovery
+```bash
+# Stop services
+sudo systemctl stop astralink-*
 
-## 6. Contact Information
------------------------
+# Backup data
+astralink-backup --quick
 
-For any questions or issues, please contact the AstraLink support team at support@quantum.api.
+# Restore from checkpoint
+astralink-restore --latest-stable
+```
+
+#### Security Incident
+```bash
+# Enable lockdown
+astralink-security --lockdown
+
+# Generate new keys
+astralink-quantum-rotate-keys
+
+# Verify system
+astralink-security-audit --full
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### Synchronization Problems
+```bash
+# Check sync status
+astralink-sync-status
+
+# Force resync
+astralink-resync --force
+```
+
+#### Performance Issues
+```bash
+# Check resources
+astralink-resources --all
+
+# Optimize performance
+astralink-optimize --auto
+```
+
+#### Security Alerts
+```bash
+# Check security status
+astralink-security-status
+
+# Run security scan
+astralink-security-scan --full
+```
+
+## Support Resources
+
+### Documentation
+- Architecture Guide
+- API Reference
+- Security Guide
+- Troubleshooting Guide
+
+### Community
+- Discord: [AstraLink Community](https://discord.gg/astralink)
+- Forum: [Developer Forum](https://forum.astralink.com)
+- GitHub: [Issue Tracker](https://github.com/redx94/AstraLink/issues)
+
+### Enterprise Support
+- 24/7 Emergency: quantum.apii@gmail.com
+- Priority Queue: Enterprise customers
+- Direct Line: Account manager
