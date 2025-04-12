@@ -122,6 +122,6 @@ Contact: quantum.apii@gmail.com
 
 ## 📚 License
 
-This project is proprietary software owned by AstraLink Technologies. Usage is subject to the AstraLink Proprietary License terms. See [LICENSE.md](LICENSE.md) for detailed terms and conditions.
+This project is proprietary software owned by AstraLink Technologies. Usage is subject to the AstraLink Proprietary License terms. See [LICENSE](LICENSE) for detailed terms and conditions.
 
 **Note:** Enterprise licensing, support, and custom solutions are available. Contact quantum.apii@gmail.com for inquiries.
