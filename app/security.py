@@ -159,8 +159,14 @@ class SecurityManager:
                         # Reset failed attempts after lockout period
                         self.failed_attempts.pop(api_key)
             
-            # TODO: Replace with actual API key validation logic
-            is_valid = api_key.startswith("astra_")
+            # Load API keys from config file
+            import yaml
+            with open("config/security_auditor.yaml", "r") as f:
+                config = yaml.safe_load(f)
+            api_keys = config.get("api_keys", {})
+
+            # Validate API key
+            is_valid = api_key in api_keys.values()
             
             if not is_valid:
                 # Record failed attempt
@@ -193,6 +199,12 @@ class SecurityManager:
             
         except HTTPException:
             raise
+        except FileNotFoundError as e:
+            self.logger.error("API key validation failed: Security configuration file not found", error=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
+        except yaml.YAMLError as e:
+            self.logger.error("API key validation failed: Error parsing security configuration file", error=str(e))
+            raise HTTPException(status_code=500, detail="Internal server error")
         except Exception as e:
             self.logger.error("API key validation failed", error=str(e))
             raise HTTPException(status_code=500, detail="Internal server error")

@@ -70,3 +70,7 @@ remediation_steps:
   - "update_packages"
   - "harden_configuration"
   - "isolate_node"
+
+# API Keys
+api_keys:
+  astra_admin: "your_strong_api_key_here"

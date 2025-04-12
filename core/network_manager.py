@@ -170,10 +170,19 @@ class NetworkManager:
                     node_role=str(ha_manager.current_role)
                 )
                 if ha_manager.current_leader:
-                    # TODO: Forward request to leader
                     self.logger.info("Forwarding request to leader node",
                                    leader=ha_manager.current_leader)
-                    raise NotImplementedError("Request forwarding not yet implemented")
+                    # Forward the request to the leader
+                    import httpx
+                    async with httpx.AsyncClient() as client:
+                        try:
+                            leader_address = ha_manager.cluster_nodes[ha_manager.current_leader]["address"]
+                            response = await client.post(f"{leader_address}/allocate_bandwidth", json=request)
+                            response.raise_for_status()  # Raise HTTPError for bad responses (4xx or 5xx)
+                            return response.json()
+                        except httpx.HTTPError as e:
+                            self.logger.error(f"Failed to forward request to leader: {e}")
+                            raise
                 else:
                     raise ValueError("No leader available for bandwidth allocation")
             
@@ -213,6 +222,13 @@ class NetworkManager:
             
             return optimization_result
             
+        except httpx.HTTPError as e:
+            self.logger.error(f"Failed to forward request to leader: {e}")
+            self.metrics.record_metric("bandwidth_allocation_failure", {
+                "error": str(e),
+                "timestamp": time.time()
+            })
+            raise
         except Exception as e:
             self.logger.error("Bandwidth allocation failed", error=str(e))
             self.metrics.record_metric("bandwidth_allocation_failure", {

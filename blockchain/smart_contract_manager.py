@@ -9,6 +9,7 @@ Developer: Reece Dixon
 Copyright © 2025 AstraLink. All rights reserved.
 See LICENSE file for licensing information.
 """
+import os
 
 from web3 import Web3
 from typing import Dict, List, Optional
@@ -52,7 +53,7 @@ class SmartContractManager:
             for node in self.config['dns']['bootstrap_nodes']:
                 try:
                     node_ip = self._resolve_handshake_domain(node)
-                    provider_url = f"http://{node_ip}:8545"
+                    provider_url = f"http://{node_ip}:{self.config['security']['firewall_rules'][1].split(': ')[1].split(' ')[0]}"
                     web3 = Web3(Web3.HTTPProvider(provider_url))
                     if web3.is_connected():
                         logger.info(f"Connected to network node: {node}")
@@ -79,11 +80,12 @@ class SmartContractManager:
     def _get_handshake_nameservers(self) -> List[str]:
         """Get Handshake nameservers for quantum.api"""
         try:
-            # You would implement actual Handshake nameserver lookup here
-            # For now returning placeholder values
-            return ["127.0.0.1", "::1"]
+            answers = self.dns_resolver.resolve("quantum.api", "NS")
+            nameservers = [str(ns.target) for ns in answers]
+            return nameservers
         except Exception as e:
             logger.error(f"Failed to get Handshake nameservers: {e}")
+            logger.warning("Falling back to Google DNS. This bypasses decentralized DNS resolution.")
             return ["8.8.8.8", "8.8.4.4"]  # Fallback to Google DNS
 
     def _load_contract(self):
@@ -110,7 +112,7 @@ class SmartContractManager:
                 commission_rate
             ).build_transaction({
                 'nonce': nonce,
-                'gas': 2000000,
+                'gas': self.config['smart_contracts']['gas_limit'],
                 'gasPrice': self.web3.eth.gas_price
             })
             
@@ -144,7 +146,7 @@ class SmartContractManager:
                 plan_details['service_type']
             ).build_transaction({
                 'nonce': nonce,
-                'gas': 2000000,
+                'gas': self.config['smart_contracts']['gas_limit'],
                 'gasPrice': self.web3.eth.gas_price
             })
             
@@ -173,7 +175,7 @@ class SmartContractManager:
                 plan_id
             ).build_transaction({
                 'nonce': nonce,
-                'gas': 2000000,
+                'gas': self.config['smart_contracts']['gas_limit'],
                 'gasPrice': self.web3.eth.gas_price,
                 'value': self.web3.to_wei(payment_amount, 'ether')
             })
@@ -207,3 +209,21 @@ class SmartContractManager:
             }
         except Exception as e:
             raise ContractError(f"Failed to get provider earnings: {str(e)}")
+
+    def _get_private_key(self) -> str:
+        """Retrieve the service provider's private key from environment variables."""
+        try:
+            return os.environ["SERVICE_PROVIDER_PRIVATE_KEY"]
+        except KeyError:
+            logger.warning("SERVICE_PROVIDER_PRIVATE_KEY environment variable not set.")
+            raise ContractError("Service provider private key not set.")
+
+    def _get_user_private_key(self, user_address: str) -> str:
+        """Retrieve the user's private key from environment variables."""
+        try:
+            # In a real-world scenario, you would not store user private keys in environment variables.
+            # This is just for demonstration purposes. Instead, use a secure key management system.
+            return os.environ[f"USER_{user_address.upper()}_PRIVATE_KEY"]
+        except KeyError:
+            logger.warning(f"USER_{user_address.upper()}_PRIVATE_KEY environment variable not set.")
+            raise ContractError(f"User private key not set for address: {user_address}")

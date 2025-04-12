@@ -31,6 +31,8 @@ privacy:
   data_encryption: "post-quantum"
 
 smart_contracts:
+  gas_limit: 2000000
+  contract_abi_path: "blockchain/abi/esim_nft.json"
   deployment:
     - name: "ESIMRegistry"
       address: "0x..."
@@ -38,7 +40,6 @@ smart_contracts:
       address: "0x..."
     - name: "TelecomVerifier"
       address: "0x..."
-
 handshake_integration:
   records:
     - type: "TXT"

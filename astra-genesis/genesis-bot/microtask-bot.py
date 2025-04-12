@@ -51,7 +51,7 @@ def save_bounties(bounties: List[Dict]) -> None:
     except IOError as e:
         logging.error(f"Error saving bounties: {str(e)}")
 
-def main() -> None:
+async def main() -> None:
     """
     Main loop with error handling and graceful shutdown.
     """
@@ -61,11 +61,11 @@ def main() -> None:
             if bounties:
                 save_bounties(bounties)
             logging.info(f"Sleeping for {Config.POLL_INTERVAL/60} minutes...")
-            time.sleep(Config.POLL_INTERVAL)
+            await asyncio.sleep(Config.POLL_INTERVAL)
     except KeyboardInterrupt:
         logging.info("Shutting down gracefully...")
     except Exception as e:
         logging.error(f"Unexpected error: {str(e)}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

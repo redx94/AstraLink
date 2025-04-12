@@ -45,8 +45,16 @@ class RevenueManager:
                 'timestamp': datetime.utcnow().isoformat()
             }
             
+        except stripe.error.StripeError as e:
+            # Handle Stripe-specific errors
+            error_message = f"Stripe error during revenue distribution: {str(e)}"
+            print(error_message)  # Replace with proper logging
+            raise RevenueError(error_message)
         except Exception as e:
-            raise RevenueError(f"Revenue distribution failed: {str(e)}")
+            # Handle all other exceptions
+            error_message = f"Unexpected error during revenue distribution: {str(e)}"
+            print(error_message)  # Replace with proper logging
+            raise RevenueError(error_message)
 
     async def _create_transfers(self, distributions: Dict) -> List[Dict]:
         """Create actual transfers to stakeholders"""

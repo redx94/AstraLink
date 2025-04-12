@@ -66,7 +66,8 @@ class HighAvailabilityManager:
             "capabilities": {
                 "quantum_ready": True,
                 "ai_enabled": True
-            }
+            },
+            "address": "http://localhost:8000"  # Replace with actual address
         }
         
     async def _heartbeat_loop(self):
@@ -149,8 +150,23 @@ class HighAvailabilityManager:
             election_start = time.time()
             votes = {self.node_id: True}
             
-            # Simulate vote collection from other nodes
-            # TODO: Replace with actual distributed consensus
+            # Collect votes from other nodes using Redis
+            import redis
+            redis_client = redis.Redis(host='localhost', port=6379)  # Update with your Redis configuration
+            vote_key = f"vote:{self.node_id}"
+            redis_client.setex(vote_key, self.consensus_timeout, "voted")  # Vote for self
+            
+            # Wait for votes from other nodes
+            votes = {self.node_id: True}
+            start_time = time.time()
+            while time.time() - start_time < self.consensus_timeout:
+                for node_id in self.cluster_nodes:
+                    if node_id != self.node_id and redis_client.get(f"vote:{node_id}"):
+                        votes[node_id] = True
+                if len(votes) > len(self.cluster_nodes) / 2:
+                    break
+                await asyncio.sleep(0.1)
+            
             healthy_nodes = [
                 node_id for node_id, node in self.cluster_nodes.items()
                 if node["state"] != NodeState.FAILED
@@ -253,8 +269,10 @@ class HighAvailabilityManager:
                 "term": int(time.time())
             })
             
-            # Notify other nodes
-            # TODO: Implement actual node notification
+            # Notify other nodes using Redis
+            import redis
+            redis_client = redis.Redis(host='localhost', port=6379)  # Update with your Redis configuration
+            redis_client.publish("node_notifications", "Leader state initialized")
             self.logger.info("Leader state initialized")
             
         except Exception as e:
@@ -299,13 +317,22 @@ class HighAvailabilityManager:
         
     async def _replicate_state(self):
         """Replicate leader state to followers"""
-        # TODO: Implement actual state replication
-        pass
+        # Replicate leader state to followers using Redis
+        import redis
+        redis_client = redis.Redis(host='localhost', port=6379)  # Update with your Redis configuration
+        leader_state = {
+            "node_id": self.node_id,
+            "term": self.cluster_nodes[self.node_id]["term"],
+            "became_leader_at": self.cluster_nodes[self.node_id]["became_leader_at"]
+        }
+        redis_client.set("leader_state", str(leader_state))
         
     async def _send_leader_heartbeat(self):
         """Send heartbeat from leader to followers"""
-        # TODO: Implement actual heartbeat mechanism
-        pass
+        # Send heartbeat to followers using Redis
+        import redis
+        redis_client = redis.Redis(host='localhost', port=6379)  # Update with your Redis configuration
+        redis_client.publish("leader_heartbeat", "Heartbeat from leader")
 
 # Global high availability manager instance
 ha_manager = HighAvailabilityManager()
