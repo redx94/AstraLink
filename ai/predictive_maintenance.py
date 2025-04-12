@@ -130,6 +130,27 @@ class PredictiveMaintenance:
             self._preprocess_metrics(metrics)
         )[0]
 
+class PredictiveMaintenanceModel:
+    def __init__(self, features, targets):
+        self.features = features
+        self.targets = targets
+        self.model = self._build_model()
+
+    def _build_model(self):
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(64, activation='relu'),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(1, activation='sigmoid')
+        ])
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        return model
+
+    def train(self, epochs=10, batch_size=32):
+        self.model.fit(self.features, self.targets, epochs=epochs, batch_size=batch_size)
+
+    def predict(self, test_features):
+        return self.model.predict(test_features)
+
 # Example usage
 from time import sleep
 

@@ -139,3 +139,58 @@ class NetworkOptimizer:
         min_dbm = -100
         max_dbm = -30
         return max(0.0, min(1.0, (dbm - min_dbm) / (max_dbm - min_dbm)))
+
+    def optimize_bandwidth(self, server_data: Dict) -> Dict:
+        """Optimize network bandwidth allocation using ML"""
+        try:
+            # Normalize input data
+            normalized_data = self._normalize_network_metrics(server_data)
+            
+            # Extract features
+            features = self._extract_network_features(normalized_data)
+            
+            # Predict optimal bandwidth allocation
+            predictions = self.model.predict(features)
+            
+            # Apply quantum correction
+            quantum_corrected = self.qec.apply_correction(predictions)
+            
+            # Generate optimization plan
+            optimization_plan = self._create_bandwidth_plan(quantum_corrected)
+            
+            return {
+                "allocation": optimization_plan,
+                "predicted_improvement": self._calculate_improvement(
+                    current=server_data,
+                    optimized=optimization_plan
+                ),
+                "confidence_score": self._calculate_confidence(predictions)
+            }
+        except Exception as e:
+            logging.error(f"Error optimizing bandwidth: {e}")
+            raise
+
+    def _normalize_network_metrics(self, metrics: Dict) -> np.ndarray:
+        """Normalize network metrics for model input"""
+        # Placeholder for normalization logic
+        return np.array([metrics.get('bandwidth_usage', 0) / 100.0])
+
+    def _extract_network_features(self, normalized_data: np.ndarray) -> np.ndarray:
+        """Extract features from normalized data"""
+        # Placeholder for feature extraction logic
+        return normalized_data
+
+    def _create_bandwidth_plan(self, predictions: np.ndarray) -> Dict:
+        """Create bandwidth allocation plan from predictions"""
+        # Placeholder for bandwidth plan creation logic
+        return {"bandwidth_allocation": predictions.tolist()}
+
+    def _calculate_improvement(self, current: Dict, optimized: Dict) -> float:
+        """Calculate predicted improvement from optimization"""
+        # Placeholder for improvement calculation logic
+        return 0.1
+
+    def _calculate_confidence(self, predictions: np.ndarray) -> float:
+        """Calculate confidence score for predictions"""
+        # Placeholder for confidence calculation logic
+        return 0.95

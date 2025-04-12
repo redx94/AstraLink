@@ -6,7 +6,7 @@ def detect_anomalies(log_file):
     with open(log_file, 'r') as f:
         logs = json.load(f)
     model = IsolationForest(n_estimators=100, contamination=0.1)
-    data = [[log.get("metric")] for log in logs]
+    data = [[log.get("metric", 0)] for log in logs]
     anomalies = model.fit_predict(data)
     return [log for i, log in enumerate(logs) if anomalies[i] == -1]
 
