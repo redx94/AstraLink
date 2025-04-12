@@ -1,4 +1,4 @@
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, cross_val_score
 from sklearn.linear_model import LinearRegression
 import numpy as np
 
@@ -6,7 +6,11 @@ source = [performance_data]
 
 class NetworkOptimizationModel(GridSearchCV):
     def __init__(self, data, targets):
-        super().__init__(estimator=LinearRegression(), param_grid={}, cv=5)
+        param_grid = {
+            'fit_intercept': [True, False],
+            'normalize': [True, False]
+        }
+        super().__init__(estimator=LinearRegression(), param_grid=param_grid, cv=5)
         self.data = data
         self.targets = targets
         self.fit(self.data, self.targets)
@@ -36,3 +40,15 @@ class NetworkOptimizationModel(GridSearchCV):
                     optimized=optimization_plan
                 ),
                 "confidence_score": self._calculate_confidence(predictions)
+            }
+        except Exception as e:
+            logging.error(f"Error optimizing bandwidth: {e}")
+            raise
+
+    def evaluate_model(self):
+        """Evaluate model performance using cross-validation"""
+        scores = cross_val_score(self, self.data, self.targets, cv=5)
+        return {
+            "mean_score": np.mean(scores),
+            "std_dev": np.std(scores)
+        }

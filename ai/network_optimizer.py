@@ -16,12 +16,14 @@ import numpy as np
 from quantum.quantum_error_correction import QuantumErrorCorrection
 from scipy.optimize import linear_sum_assignment
 import logging
+from sklearn.ensemble import IsolationForest
 
 class NetworkOptimizer:
     def __init__(self):
         self.model = self._build_model()
         self.qec = QuantumErrorCorrection()
         self.history = []
+        self.anomaly_detector = IsolationForest(n_estimators=100, contamination=0.1)
 
     def _build_model(self):
         model = tf.keras.Sequential([
@@ -41,11 +43,11 @@ class NetworkOptimizer:
 
         # Extract and normalize key metrics
         processed_metrics.extend([
-            metrics.get('bandwidth_usage', 0) / 100.0,
-            metrics.get('latency_ms', 0) / 1000.0,
-            metrics.get('packet_loss', 0) / 100.0,
-            metrics.get('signal_strength', -100) / -100.0,
-            metrics.get('interference_level', 0) / 100.0
+            self._normalize_metric(metrics.get('bandwidth_usage', 0), 0, 100),
+            self._normalize_metric(metrics.get('latency_ms', 0), 0, 1000),
+            self._normalize_metric(metrics.get('packet_loss', 0), 0, 100),
+            self._normalize_metric(metrics.get('signal_strength', -100), -100, 0),
+            self._normalize_metric(metrics.get('interference_level', 0), 0, 100)
         ])
 
         # Add derived features
@@ -55,9 +57,22 @@ class NetworkOptimizer:
             self._calculate_interference_impact(metrics)
         ])
 
+        # Detect and handle outliers
+        processed_metrics = self._handle_outliers(processed_metrics)
+
         processed_metrics_array = np.array(processed_metrics).reshape(1, -1)
         logging.info(f"Preprocessed metrics array: {processed_metrics_array}")
         return processed_metrics_array
+
+    def _normalize_metric(self, value: float, min_value: float, max_value: float) -> float:
+        """Normalize a metric to a 0-1 scale"""
+        return (value - min_value) / (max_value - min_value)
+
+    def _handle_outliers(self, data: List[float]) -> List[float]:
+        """Detect and handle outliers in the data"""
+        data_array = np.array(data).reshape(1, -1)
+        anomalies = self.anomaly_detector.fit_predict(data_array)
+        return [0 if anomaly == -1 else value for value, anomaly in zip(data, anomalies)]
 
     logging.basicConfig(level=logging.INFO)
 
@@ -68,10 +83,14 @@ class NetworkOptimizer:
         logging.info(f"Preprocessed metrics: {preprocessed_metrics}")
         prediction = self.model.predict(preprocessed_metrics)
         logging.info(f"Model prediction: {prediction}")
+        
+        # Apply quantum error correction
+        corrected_prediction = self.qec.apply_error_correction(prediction)
+        
         result = {
-            "bandwidth_allocation": prediction[0],
-            "latency_optimization": prediction[1],
-            "power_settings": prediction[2],
+            "bandwidth_allocation": corrected_prediction[0],
+            "latency_optimization": corrected_prediction[1],
+            "power_settings": corrected_prediction[2],
             "quantum_secure": True
         }
         logging.info(f"optimize_network_slice returning: {result}")
@@ -139,3 +158,58 @@ class NetworkOptimizer:
         min_dbm = -100
         max_dbm = -30
         return max(0.0, min(1.0, (dbm - min_dbm) / (max_dbm - min_dbm)))
+
+    def optimize_bandwidth(self, server_data: Dict) -> Dict:
+        """Optimize network bandwidth allocation using ML"""
+        try:
+            # Normalize input data
+            normalized_data = self._normalize_network_metrics(server_data)
+            
+            # Extract features
+            features = self._extract_network_features(normalized_data)
+            
+            # Predict optimal bandwidth allocation
+            predictions = self.model.predict(features)
+            
+            # Apply quantum correction
+            quantum_corrected = self.qec.apply_correction(predictions)
+            
+            # Generate optimization plan
+            optimization_plan = self._create_bandwidth_plan(quantum_corrected)
+            
+            return {
+                "allocation": optimization_plan,
+                "predicted_improvement": self._calculate_improvement(
+                    current=server_data,
+                    optimized=optimization_plan
+                ),
+                "confidence_score": self._calculate_confidence(predictions)
+            }
+        except Exception as e:
+            logging.error(f"Error optimizing bandwidth: {e}")
+            raise
+
+    def _normalize_network_metrics(self, metrics: Dict) -> np.ndarray:
+        """Normalize network metrics for model input"""
+        # Placeholder for normalization logic
+        return np.array([metrics.get('bandwidth_usage', 0) / 100.0])
+
+    def _extract_network_features(self, normalized_data: np.ndarray) -> np.ndarray:
+        """Extract features from normalized data"""
+        # Placeholder for feature extraction logic
+        return normalized_data
+
+    def _create_bandwidth_plan(self, predictions: np.ndarray) -> Dict:
+        """Create bandwidth allocation plan from predictions"""
+        # Placeholder for bandwidth plan creation logic
+        return {"bandwidth_allocation": predictions.tolist()}
+
+    def _calculate_improvement(self, current: Dict, optimized: Dict) -> float:
+        """Calculate predicted improvement from optimization"""
+        # Placeholder for improvement calculation logic
+        return 0.1
+
+    def _calculate_confidence(self, predictions: np.ndarray) -> float:
+        """Calculate confidence score for predictions"""
+        # Placeholder for confidence calculation logic
+        return 0.95

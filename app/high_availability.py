@@ -9,6 +9,7 @@ from enum import Enum
 from datetime import datetime
 from .logging_config import StructuredLogger
 from .monitoring import SystemMonitor
+from ai.monitor import detect_anomalies
 
 class NodeRole(Enum):
     LEADER = "leader"
@@ -108,7 +109,20 @@ class HighAvailabilityManager:
                     self.current_state = NodeState.DEGRADED
                 else:
                     self.current_state = NodeState.FAILED
-                    
+                
+                # Perform advanced health checks
+                node_health = self._perform_advanced_health_checks()
+                if node_health["cpu_usage"] > 80 or node_health["memory_usage"] > 85:
+                    self.current_state = NodeState.DEGRADED
+                if node_health["disk_usage"] > 90 or node_health["network_latency"] > 100:
+                    self.current_state = NodeState.FAILED
+                
+                # Integrate anomaly detection
+                anomalies = detect_anomalies("network_logs.json")
+                if anomalies:
+                    self.logger.warning("Anomalies detected in node behavior", anomalies=anomalies)
+                    self.current_state = NodeState.DEGRADED
+                
                 # Check for failed nodes
                 await self._check_failed_nodes()
                 
@@ -333,6 +347,15 @@ class HighAvailabilityManager:
         import redis
         redis_client = redis.Redis(host='localhost', port=6379)  # Update with your Redis configuration
         redis_client.publish("leader_heartbeat", "Heartbeat from leader")
+    
+    def _perform_advanced_health_checks(self) -> Dict[str, Any]:
+        """Perform advanced health checks for nodes"""
+        return self.monitor.check_node_health()
+    
+    def _alert_administrators(self, message: str):
+        """Alert administrators of critical issues"""
+        self.logger.critical("ALERT: " + message)
+        # Placeholder for actual alerting system integration
 
 # Global high availability manager instance
 ha_manager = HighAvailabilityManager()

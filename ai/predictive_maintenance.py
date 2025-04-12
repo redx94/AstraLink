@@ -5,6 +5,7 @@ from typing import Dict, List
 import numpy as np
 from quantum.quantum_error_correction import QuantumErrorCorrection
 import json
+from sklearn.ensemble import IsolationForest
 
 class PredictiveMaintenance:
     def __init__(self):
@@ -12,6 +13,7 @@ class PredictiveMaintenance:
         self.qec = QuantumErrorCorrection()
         self.maintenance_history = []
         self.anomaly_detector = self._build_anomaly_detector()
+        self.outlier_detector = IsolationForest(n_estimators=100, contamination=0.1)
 
     def _build_predictive_model(self):
         return tf.keras.Sequential([
@@ -31,7 +33,8 @@ class PredictiveMaintenance:
 
     async def predict_failures(self, network_metrics: Dict) -> List[Dict]:
         """Predict potential network failures before they occur"""
-        predictions = self.model.predict(self._preprocess_metrics(network_metrics))
+        preprocessed_metrics = self._preprocess_metrics(network_metrics)
+        predictions = self.model.predict(preprocessed_metrics)
         
         return [{
             "component": pred["component"],
@@ -43,11 +46,15 @@ class PredictiveMaintenance:
     async def optimize_maintenance_schedule(self, infrastructure: Dict) -> Dict:
         """Generate optimal maintenance schedule"""
         schedule = await self._generate_schedule(infrastructure)
+        
+        # Apply quantum error correction
+        corrected_schedule = self.qec.apply_error_correction(schedule)
+        
         return {
-            "schedule": schedule,
-            "priority_tasks": self._get_priority_tasks(schedule),
-            "resource_allocation": self._optimize_resources(schedule),
-            "cost_savings": self._calculate_savings(schedule)
+            "schedule": corrected_schedule,
+            "priority_tasks": self._get_priority_tasks(corrected_schedule),
+            "resource_allocation": self._optimize_resources(corrected_schedule),
+            "cost_savings": self._calculate_savings(corrected_schedule)
         }
 
     def maintain_checks(self, system_logs):
@@ -129,6 +136,52 @@ class PredictiveMaintenance:
         return self.anomaly_detector.predict_proba(
             self._preprocess_metrics(metrics)
         )[0]
+
+    def _preprocess_metrics(self, metrics: Dict) -> np.ndarray:
+        """Preprocess network metrics for ML model input"""
+        processed_metrics = []
+
+        # Extract and normalize key metrics
+        processed_metrics.extend([
+            self._normalize_metric(metrics.get('latency', 0), 0, 100),
+            self._normalize_metric(metrics.get('error_rate', 0), 0, 0.01),
+            self._normalize_metric(metrics.get('throughput', 0), 0, 10000),
+            self._normalize_metric(metrics.get('resource_usage', 0), 0, 100),
+            self._normalize_metric(metrics.get('signal_strength', -120), -120, -50),
+            self._normalize_metric(metrics.get('interference_level', -90), -90, -30)
+        ])
+
+        # Detect and handle outliers
+        processed_metrics = self._handle_outliers(processed_metrics)
+
+        return np.array(processed_metrics).reshape(1, -1)
+
+    def _handle_outliers(self, data: List[float]) -> List[float]:
+        """Detect and handle outliers in the data"""
+        data_array = np.array(data).reshape(1, -1)
+        anomalies = self.outlier_detector.fit_predict(data_array)
+        return [0 if anomaly == -1 else value for value, anomaly in zip(data, anomalies)]
+
+class PredictiveMaintenanceModel:
+    def __init__(self, features, targets):
+        self.features = features
+        self.targets = targets
+        self.model = self._build_model()
+
+    def _build_model(self):
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(64, activation='relu'),
+            tf.keras.layers.Dense(32, activation='relu'),
+            tf.keras.layers.Dense(1, activation='sigmoid')
+        ])
+        model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+        return model
+
+    def train(self, epochs=10, batch_size=32):
+        self.model.fit(self.features, self.targets, epochs=epochs, batch_size=batch_size)
+
+    def predict(self, test_features):
+        return self.model.predict(test_features)
 
 # Example usage
 from time import sleep

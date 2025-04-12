@@ -1,5 +1,6 @@
 import random
 import logging
+from ai.ai_agent_framework import AIAgent
 
 logging.basicConfig(level=logging.INFO)
 
@@ -85,7 +86,7 @@ class MultiversalConvergence:
         return True
 
 # Test instance
-systems = [AiAgent("Chat AstraLink", "System sync")]
+systems = [AIAgent("Chat AstraLink", "System sync")]
 muf = MultiversalConvergence(systems)
 aligned = muf.align_systems()
 print(aligned)

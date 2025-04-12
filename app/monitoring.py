@@ -170,6 +170,29 @@ class SystemMonitor:
             self.logger.error("Security check failed", error=str(e))
             return {"status": "error", "error": str(e)}
 
+    def collect_and_monitor_metrics(self, fidelity: float, error_rate: float, correction_success_rate: float, resource_usage: Dict[str, float]):
+        """Collect and monitor specific metrics to evaluate the effectiveness of quantum error correction"""
+        self.metrics.track_performance(
+            latency=resource_usage.get("latency", 0.0),
+            throughput=resource_usage.get("throughput", 0.0),
+            reliability=resource_usage.get("reliability", 0.0)
+        )
+        self.metrics.record_event({
+            "name": "quantum_error_correction_fidelity",
+            "value": fidelity,
+            "labels": {"metric": "fidelity"}
+        })
+        self.metrics.record_event({
+            "name": "quantum_error_correction_error_rate",
+            "value": error_rate,
+            "labels": {"metric": "error_rate"}
+        })
+        self.metrics.record_event({
+            "name": "quantum_error_correction_success_rate",
+            "value": correction_success_rate,
+            "labels": {"metric": "correction_success_rate"}
+        })
+
 class MetricsAggregator:
     """Aggregate and analyze system metrics"""
     

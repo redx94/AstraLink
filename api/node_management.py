@@ -24,6 +24,7 @@ from quantum.quantum_error_correction import QuantumErrorCorrection
 from network.handshake_integration import HandshakeIntegration
 from tools.security_auditor import SecurityAuditor
 from logging_config import get_logger
+from app.security import security_manager, verify_api_key
 
 logger = get_logger(__name__)
 
@@ -42,6 +43,7 @@ class NodeManager:
         self.nodes = {}
         self.security_auditor = SecurityAuditor()
         self._load_config()
+        self.config_versions = {}
 
     def _load_config(self):
         """Load node management configuration"""
@@ -102,12 +104,18 @@ class NodeManager:
             # Apply quantum error correction to config
             corrected_config = await self._protect_configuration(config)
             
+            # Validate configuration
+            self._validate_configuration(corrected_config)
+            
             # Push configuration to node
             response = await self._push_config(node, corrected_config)
             
             # Verify configuration application
             if not await self._verify_config(node, corrected_config):
                 raise ValueError("Configuration verification failed")
+                
+            # Maintain version control
+            self._maintain_version_control(node_id, corrected_config)
                 
             return {
                 "node_id": node_id,
@@ -139,6 +147,31 @@ class NodeManager:
             
         except Exception as e:
             logger.error(f"Configuration protection failed: {e}")
+            raise
+
+    def _validate_configuration(self, config: Dict):
+        """Validate configuration to ensure it does not cause issues"""
+        try:
+            # Implement validation logic
+            if not config.get("network"):
+                raise ValueError("Network configuration is missing")
+            if not config.get("security"):
+                raise ValueError("Security configuration is missing")
+        except Exception as e:
+            logger.error(f"Configuration validation failed: {e}")
+            raise
+
+    def _maintain_version_control(self, node_id: str, config: Dict):
+        """Maintain version control for configurations"""
+        try:
+            version = str(uuid.uuid4())
+            self.config_versions[node_id] = {
+                "version": version,
+                "config": config,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Version control maintenance failed: {e}")
             raise
 
 node_manager = NodeManager()
@@ -313,6 +346,25 @@ async def get_node_metrics(
         
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/nodes/{node_id}/audit_logs")
+async def get_audit_logs(
+    node_id: str,
+    start_time: Optional[datetime] = None,
+    end_time: Optional[datetime] = None,
+    event_type: Optional[str] = None,
+    api_key: str = Depends(verify_api_key)
+):
+    """Get audit logs for a node"""
+    try:
+        logs = await security_manager.get_audit_logs(start_time, end_time, event_type)
+        return {
+            "node_id": node_id,
+            "audit_logs": logs,
+            "timestamp": datetime.utcnow().isoformat()
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
