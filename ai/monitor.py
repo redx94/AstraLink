@@ -27,6 +27,14 @@ def monitor_node(log_file):
         "health_status": health_status
     }
 
+def detect_anomalies_in_error_correction(log_file):
+    with open(log_file, 'r') as f:
+        logs = json.load(f)
+    model = IsolationForest(n_estimators=100, contamination=0.1)
+    data = [[log.get("fidelity", 0), log.get("error_rate", 0), log.get("correction_success_rate", 0)] for log in logs]
+    anomalies = model.fit_predict(data)
+    return [log for i, log in enumerate(logs) if anomalies[i] == -1]
+
 # Example usage
 monitoring_result = monitor_node("network_logs.json")
 print("Monitoring Result", monitoring_result)

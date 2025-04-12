@@ -46,11 +46,15 @@ class PredictiveMaintenance:
     async def optimize_maintenance_schedule(self, infrastructure: Dict) -> Dict:
         """Generate optimal maintenance schedule"""
         schedule = await self._generate_schedule(infrastructure)
+        
+        # Apply quantum error correction
+        corrected_schedule = self.qec.apply_error_correction(schedule)
+        
         return {
-            "schedule": schedule,
-            "priority_tasks": self._get_priority_tasks(schedule),
-            "resource_allocation": self._optimize_resources(schedule),
-            "cost_savings": self._calculate_savings(schedule)
+            "schedule": corrected_schedule,
+            "priority_tasks": self._get_priority_tasks(corrected_schedule),
+            "resource_allocation": self._optimize_resources(corrected_schedule),
+            "cost_savings": self._calculate_savings(corrected_schedule)
         }
 
     def maintain_checks(self, system_logs):

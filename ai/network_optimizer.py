@@ -83,10 +83,14 @@ class NetworkOptimizer:
         logging.info(f"Preprocessed metrics: {preprocessed_metrics}")
         prediction = self.model.predict(preprocessed_metrics)
         logging.info(f"Model prediction: {prediction}")
+        
+        # Apply quantum error correction
+        corrected_prediction = self.qec.apply_error_correction(prediction)
+        
         result = {
-            "bandwidth_allocation": prediction[0],
-            "latency_optimization": prediction[1],
-            "power_settings": prediction[2],
+            "bandwidth_allocation": corrected_prediction[0],
+            "latency_optimization": corrected_prediction[1],
+            "power_settings": corrected_prediction[2],
             "quantum_secure": True
         }
         logging.info(f"optimize_network_slice returning: {result}")

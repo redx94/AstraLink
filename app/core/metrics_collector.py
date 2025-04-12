@@ -59,3 +59,20 @@ class MetricsCollector:
 
     def record_event(self, event: MetricEvent):
         self._events.append(event)
+
+    def track_performance(self, latency: float, throughput: float, reliability: float):
+        self.record_event(MetricEvent(
+            name="operation_latency",
+            value=latency,
+            labels={"operation_type": "quantum_error_correction"}
+        ))
+        self.record_event(MetricEvent(
+            name="system_health",
+            value=throughput,
+            labels={"component": "quantum_system_throughput"}
+        ))
+        self.record_event(MetricEvent(
+            name="system_health",
+            value=reliability,
+            labels={"component": "quantum_system_reliability"}
+        ))
