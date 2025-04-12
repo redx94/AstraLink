@@ -19,6 +19,7 @@ import numpy as np
 from logging_config import get_logger
 from quantum.quantum_error_correction import QuantumErrorCorrection
 from .carrier_integration import CarrierIntegration
+import uuid
 
 logger = get_logger(__name__)
 
