@@ -7,25 +7,38 @@ from dataclasses import dataclass
 import time
 from enum import Enum
 import functools
-from ..logging_config import get_logger
-from ..config import config_manager
-from .connection_pool import pool_manager
+import logging
+from asyncio import Lock, Task, TimeoutError
+import os
+import sys
 
-logger = get_logger(__name__)
+# Configure logging
+logger = logging.getLogger('error_recovery')
+logger.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+))
+logger.addHandler(handler)
+
+# Add project root to path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from app.config import config_manager
+from app.models import pool_manager
 
 T = TypeVar('T')  # Generic type for operation results
 
 class OperationType(Enum):
-    READ = "read"
-    WRITE = "write"
-    DELETE = "delete"
-    TRANSACTION = "transaction"
+    READ = 'read'
+    WRITE = 'write'
+    DELETE = 'delete'
+    EXECUTE = 'execute'
 
 class ResourceType(Enum):
-    DATABASE = "database"
-    CACHE = "cache"
-    BLOCKCHAIN = "blockchain"
-    QUANTUM = "quantum"
+    DATABASE = 'database'
+    CACHE = 'cache'
+    BLOCKCHAIN = 'blockchain'
+    QUANTUM = 'quantum'
 
 @dataclass
 class RetryConfig:
@@ -34,6 +47,7 @@ class RetryConfig:
     max_delay: float
     exponential_base: float
     jitter: float
+    timeout: float = 30.0  # Default timeout in seconds
 
 @dataclass
 class CircuitBreakerConfig:
@@ -42,49 +56,54 @@ class CircuitBreakerConfig:
     half_open_requests: int
 
 class CircuitBreaker:
-    """Circuit breaker pattern implementation"""
+    """Circuit breaker pattern implementation with thread safety"""
     def __init__(self, config: CircuitBreakerConfig):
         self.config = config
         self.failures = 0
         self.last_failure_time = 0
         self.state = "closed"
         self.half_open_successes = 0
+        self._lock = Lock()
 
-    def record_failure(self):
+    async def record_failure(self):
         """Record a failure and potentially open the circuit"""
-        self.failures += 1
-        self.last_failure_time = time.time()
-        if self.failures >= self.config.failure_threshold:
-            self.state = "open"
-            logger.warning(f"Circuit breaker opened after {self.failures} failures")
+        async with self._lock:
+            self.failures += 1
+            self.last_failure_time = time.time()
+            if self.failures >= self.config.failure_threshold:
+                self.state = "open"
+                logger.warning(f"Circuit breaker opened after {self.failures} failures")
 
-    def record_success(self):
+    async def record_success(self):
         """Record a success and potentially close the circuit"""
-        if self.state == "half-open":
-            self.half_open_successes += 1
-            if self.half_open_successes >= self.config.half_open_requests:
-                self.reset()
-                logger.info("Circuit breaker closed after successful half-open state")
-        else:
-            self.reset()
+        async with self._lock:
+            if self.state == "half-open":
+                self.half_open_successes += 1
+                if self.half_open_successes >= self.config.half_open_requests:
+                    await self.reset()
+                    logger.info("Circuit breaker closed after successful half-open state")
+            else:
+                await self.reset()
 
-    def reset(self):
-        """Reset the circuit breaker"""
-        self.failures = 0
-        self.state = "closed"
-        self.half_open_successes = 0
+    async def reset(self):
+        """Reset the circuit breaker state"""
+        async with self._lock:
+            self.failures = 0
+            self.state = "closed"
+            self.half_open_successes = 0
 
-    def allow_request(self) -> bool:
+    async def allow_request(self) -> bool:
         """Check if a request should be allowed"""
-        if self.state == "closed":
-            return True
-        elif self.state == "open":
-            if time.time() - self.last_failure_time >= self.config.reset_timeout:
-                self.state = "half-open"
+        async with self._lock:
+            if self.state == "closed":
                 return True
-            return False
-        else:  # half-open
-            return True
+            elif self.state == "open":
+                if time.time() - self.last_failure_time >= self.config.reset_timeout:
+                    self.state = "half-open"
+                    return True
+                return False
+            else:  # half-open
+                return True
 
 class ErrorRecoveryManager:
     """Manages error recovery strategies"""
@@ -92,10 +111,25 @@ class ErrorRecoveryManager:
         self.config = config_manager.get_value('error_recovery', {})
         self.circuit_breakers: Dict[str, CircuitBreaker] = {}
         self.retry_configs: Dict[str, RetryConfig] = {}
+        self._monitor_task: Optional[Task] = None
+        self._shutdown_event = asyncio.Event()
         self._initialize_configs()
         
         # Start monitoring task
-        asyncio.create_task(self._monitor_circuit_breakers())
+        self._monitor_task = asyncio.create_task(self._monitor_circuit_breakers())
+
+    async def shutdown(self):
+        """Gracefully shutdown the error recovery manager"""
+        if not self._shutdown_event.is_set():
+            logger.info("Shutting down error recovery manager...")
+            self._shutdown_event.set()
+            if self._monitor_task:
+                try:
+                    await asyncio.wait_for(self._monitor_task, timeout=5.0)
+                except TimeoutError:
+                    logger.warning("Monitor task shutdown timed out")
+                except Exception as e:
+                    logger.error(f"Error during shutdown: {e}")
 
     def _initialize_configs(self):
         """Initialize retry and circuit breaker configurations"""
@@ -106,7 +140,8 @@ class ErrorRecoveryManager:
                 initial_delay=self.config.get('retry', {}).get('initial_delay', 0.1),
                 max_delay=self.config.get('retry', {}).get('max_delay', 2.0),
                 exponential_base=self.config.get('retry', {}).get('exponential_base', 2.0),
-                jitter=self.config.get('retry', {}).get('jitter', 0.1)
+                jitter=self.config.get('retry', {}).get('jitter', 0.1),
+                timeout=self.config.get('retry', {}).get('timeout', 30.0)
             )
         
         # Initialize circuit breakers
@@ -121,14 +156,17 @@ class ErrorRecoveryManager:
 
     async def _monitor_circuit_breakers(self):
         """Monitor and log circuit breaker states"""
-        while True:
+        while not self._shutdown_event.is_set():
             try:
                 states = {
                     resource_type: breaker.state
                     for resource_type, breaker in self.circuit_breakers.items()
                 }
                 logger.info("Circuit breaker states", extra={'states': states})
-                await asyncio.sleep(60)  # Check every minute
+                try:
+                    await asyncio.wait_for(self._shutdown_event.wait(), timeout=60)
+                except TimeoutError:
+                    continue
             except Exception as e:
                 logger.error(f"Circuit breaker monitoring failed: {e}")
                 await asyncio.sleep(5)
@@ -153,17 +191,22 @@ class ErrorRecoveryManager:
         retry_config = self.retry_configs[resource_type.value]
         circuit_breaker = self.circuit_breakers[resource_type.value]
         
-        if not circuit_breaker.allow_request():
+        if not await circuit_breaker.allow_request():
             logger.warning(f"Circuit breaker is open for {resource_type.value}")
             if fallback:
-                return await fallback(*args, **kwargs)
+                return await self._execute_with_timeout(fallback, retry_config.timeout, *args, **kwargs)
             raise Exception(f"Circuit breaker is open for {resource_type.value}")
         
         last_error = None
         for attempt in range(retry_config.max_attempts):
             try:
-                result = await operation(*args, **kwargs)
-                circuit_breaker.record_success()
+                result = await self._execute_with_timeout(
+                    operation,
+                    retry_config.timeout,
+                    *args,
+                    **kwargs
+                )
+                await circuit_breaker.record_success()
                 return result
                 
             except Exception as e:
@@ -178,7 +221,7 @@ class ErrorRecoveryManager:
                     }
                 )
                 
-                circuit_breaker.record_failure()
+                await circuit_breaker.record_failure()
                 
                 if attempt < retry_config.max_attempts - 1:
                     delay = self._calculate_delay(attempt, retry_config)
@@ -187,12 +230,31 @@ class ErrorRecoveryManager:
                 
                 if fallback:
                     try:
-                        return await fallback(*args, **kwargs)
+                        return await self._execute_with_timeout(
+                            fallback,
+                            retry_config.timeout,
+                            *args,
+                            **kwargs
+                        )
                     except Exception as fallback_error:
                         logger.error(f"Fallback operation failed: {fallback_error}")
                         raise last_error
                 
                 raise last_error
+
+    async def _execute_with_timeout(self,
+                                  operation: Callable[..., Awaitable[T]],
+                                  timeout: float,
+                                  *args,
+                                  **kwargs) -> T:
+        """Execute an operation with a timeout"""
+        try:
+            return await asyncio.wait_for(
+                operation(*args, **kwargs),
+                timeout=timeout
+            )
+        except TimeoutError:
+            raise TimeoutError(f"Operation timed out after {timeout} seconds")
 
     async def execute_db_operation(self,
                                  operation: Callable[..., Awaitable[T]],
@@ -257,49 +319,6 @@ class ErrorRecoveryManager:
             *args,
             **kwargs
         )
-
-    def with_circuit_breaker(self, resource_type: ResourceType):
-        """Decorator for adding circuit breaker to functions"""
-        def decorator(func):
-            @functools.wraps(func)
-            async def wrapper(*args, **kwargs):
-                circuit_breaker = self.circuit_breakers[resource_type.value]
-                if not circuit_breaker.allow_request():
-                    raise Exception(f"Circuit breaker is open for {resource_type.value}")
-                try:
-                    result = await func(*args, **kwargs)
-                    circuit_breaker.record_success()
-                    return result
-                except Exception as e:
-                    circuit_breaker.record_failure()
-                    raise
-            return wrapper
-        return decorator
-
-    def with_retry(self, resource_type: ResourceType):
-        """Decorator for adding retry logic to functions"""
-        def decorator(func):
-            @functools.wraps(func)
-            async def wrapper(*args, **kwargs):
-                retry_config = self.retry_configs[resource_type.value]
-                last_error = None
-                
-                for attempt in range(retry_config.max_attempts):
-                    try:
-                        return await func(*args, **kwargs)
-                    except Exception as e:
-                        last_error = e
-                        if attempt < retry_config.max_attempts - 1:
-                            delay = self._calculate_delay(attempt, retry_config)
-                            await asyncio.sleep(delay)
-                            continue
-                        raise
-                
-                if last_error:
-                    raise last_error
-                    
-            return wrapper
-        return decorator
 
 # Global error recovery manager instance
 error_recovery_manager = ErrorRecoveryManager()

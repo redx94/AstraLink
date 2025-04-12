@@ -56,10 +56,12 @@ export class AstraLinkError extends Error {
 export class ErrorHandler {
     private static readonly errorCallbacks: ((error: AstraLinkError) => void)[] = [];
     private static metricsClient: MetricsClient;
+    private static reloadAttempts = 0;
+    private static readonly MAX_RELOAD_ATTEMPTS = 3;
 
     static initialize(metricsClient: MetricsClient): void {
         this.metricsClient = metricsClient;
-        console.log('Metrics client initialized:', metricsClient);
+        this.reloadAttempts = 0;
     }
 
     static handle(error: Error, correlationId?: string): void {
@@ -70,11 +72,6 @@ export class ErrorHandler {
         if (correlationId) {
             astraError.metadata.correlationId = correlationId;
         }
-// Log error with full context
-console.error('Error:', astraError);
-console.error(JSON.stringify(astraError.toJSON()));
-console.log('Correlation ID:', correlationId);
-console.log('Full Error Object:', error);
         
         // Track error metrics
         if (this.metricsClient) {
@@ -96,16 +93,30 @@ console.log('Full Error Object:', error);
 
     private static handleCriticalError(error: AstraLinkError): void {
         // Persist error for post-mortem analysis
-        localStorage.setItem(`critical_error_${Date.now()}`, JSON.stringify(error.toJSON()));
+        try {
+            localStorage.setItem(`critical_error_${Date.now()}`, JSON.stringify(error.toJSON()));
+        } catch (e) {
+            // Ignore storage errors
+        }
         
         // Attempt graceful shutdown of critical systems
         this.errorCallbacks
             .filter(callback => callback.name === 'criticalSystemHandler')
             .forEach(callback => callback(error));
             
-        // Force reload if critical systems are unresponsive
-        if (error.code.startsWith('SYSTEM_')) {
-            setTimeout(() => window.location.reload(), 5000);
+        // Force reload if critical systems are unresponsive, with retry limit
+        if (error.code.startsWith('SYSTEM_') && this.reloadAttempts < this.MAX_RELOAD_ATTEMPTS) {
+            this.reloadAttempts++;
+            setTimeout(() => {
+                if (document.visibilityState === 'visible') {
+                    window.location.reload();
+                }
+            }, 5000);
+        } else if (this.reloadAttempts >= this.MAX_RELOAD_ATTEMPTS) {
+            // Log system as critically failed and notify monitoring
+            if (this.metricsClient) {
+                this.metricsClient.incrementErrorCount('SYSTEM_CRITICAL_FAILURE', ErrorSeverity.CRITICAL);
+            }
         }
     }
 }

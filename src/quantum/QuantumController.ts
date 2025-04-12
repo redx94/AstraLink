@@ -10,7 +10,7 @@
  * See LICENSE file for licensing information.
  */
 
-import { AstraLinkError, ErrorSeverity } from '../core/ErrorHandler';
+import { AstraLinkError, ErrorSeverity, ErrorMetadata } from '../core/ErrorHandler';
 import { Observable, Subject } from 'rxjs';
 
 interface QuantumState {
@@ -21,6 +21,27 @@ interface QuantumState {
     hybridControlStatus?: string;
 }
 
+// Add Logger class if not available in a separate module
+class Logger {
+    constructor(private context: string) {}
+    
+    debug(message: string, meta?: any) {
+        console.debug(`[${this.context}] ${message}`, meta || '');
+    }
+    
+    info(message: string, meta?: any) {
+        console.info(`[${this.context}] ${message}`, meta || '');
+    }
+    
+    warn(message: string, meta?: any) {
+        console.warn(`[${this.context}] ${message}`, meta || '');
+    }
+    
+    error(message: string, meta?: any) {
+        console.error(`[${this.context}] ${message}`, meta || '');
+    }
+}
+
 import { QuantumInterface } from './QuantumInterface';
 
 export class QuantumController {
@@ -28,6 +49,7 @@ export class QuantumController {
     private readonly stateSubject = new Subject<QuantumState>();
     private state: QuantumState | null = null;
     private quantum_interface: QuantumInterface;
+    private readonly logger = new Logger('QuantumController');
 
     constructor(private readonly qubitCapacity: number) {
         this.quantum_interface = new QuantumInterface();
@@ -93,20 +115,34 @@ export class QuantumController {
             throw new AstraLinkError(
                 'Quantum system not initialized',
                 'QUANTUM_STATE_ERROR',
-                ErrorSeverity.HIGH
+                ErrorSeverity.HIGH,
+                {
+                    timestamp: Date.now(),
+                    context: 'Error correction attempted on uninitialized system'
+                }
             );
         }
 
-        console.log('Quantum state before error correction:', this.state);
+        this.logger.debug('Starting error correction', { 
+            initialState: JSON.stringify(this.state),
+            errorRate: this.state.errorRate,
+            fidelity: this.state.fidelity
+        });
+
         // Implement quantum error correction using surface codes
-        // This is a placeholder for actual quantum error correction implementation
         const corrected = await this.performSurfaceCodeCorrection();
         
         if (corrected) {
             this.state.errorRate = Math.max(0, this.state.errorRate - 0.1);
             this.state.fidelity = Math.min(1, this.state.fidelity + 0.1);
+            
+            this.logger.info('Error correction successful', {
+                newErrorRate: this.state.errorRate,
+                newFidelity: this.state.fidelity
+            });
+        } else {
+            this.logger.warn('Error correction failed or had no effect');
         }
-        console.log('Quantum state after error correction:', this.state);
 
         this.stateSubject.next(this.state);
         return corrected;
@@ -191,9 +227,24 @@ export class QuantumController {
     }
 
     private determineCorrections(syndrome: number[]): number[] {
-        // Implement minimum weight perfect matching for error correction
-        const corrections = new Array(this.state!.qubits.length).fill(0);
+        if (!this.state?.qubits?.length) {
+            throw new AstraLinkError(
+                'Invalid quantum state for correction',
+                'QUANTUM_CORRECTION_ERROR',
+                ErrorSeverity.HIGH,
+                {
+                    timestamp: Date.now()
+                }
+            );
+        }
+
+        const corrections = new Array(this.state.qubits.length).fill(0);
         const errors = this.findErrorLocations(syndrome);
+        
+        this.logger.debug('Determined corrections', {
+            syndromeLength: syndrome.length,
+            errorCount: errors.length
+        });
         
         errors.forEach(error => {
             corrections[error] = 1;
@@ -203,9 +254,31 @@ export class QuantumController {
     }
 
     private findErrorLocations(syndrome: number[]): number[] {
-        // Implement error location finding using syndrome measurements
+        if (!this.state?.qubits?.length) {
+            throw new AstraLinkError(
+                'Invalid quantum state for error location',
+                'QUANTUM_ERROR_LOCATION',
+                ErrorSeverity.HIGH,
+                {
+                    timestamp: Date.now()
+                }
+            );
+        }
+
         const errors: number[] = [];
-        const size = Math.sqrt(this.state!.qubits.length);
+        const size = Math.sqrt(this.state.qubits.length);
+        
+        if (!Number.isInteger(size)) {
+            throw new AstraLinkError(
+                'Invalid qubit array size',
+                'QUANTUM_ARRAY_ERROR',
+                ErrorSeverity.HIGH,
+                {
+                    timestamp: Date.now(),
+                    context: `Qubit length: ${this.state.qubits.length}`
+                }
+            );
+        }
         
         for (let i = 0; i < syndrome.length; i++) {
             if (syndrome[i] === 1) {
