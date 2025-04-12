@@ -16,12 +16,14 @@ import numpy as np
 from quantum.quantum_error_correction import QuantumErrorCorrection
 from scipy.optimize import linear_sum_assignment
 import logging
+from sklearn.ensemble import IsolationForest
 
 class NetworkOptimizer:
     def __init__(self):
         self.model = self._build_model()
         self.qec = QuantumErrorCorrection()
         self.history = []
+        self.anomaly_detector = IsolationForest(n_estimators=100, contamination=0.1)
 
     def _build_model(self):
         model = tf.keras.Sequential([
@@ -41,11 +43,11 @@ class NetworkOptimizer:
 
         # Extract and normalize key metrics
         processed_metrics.extend([
-            metrics.get('bandwidth_usage', 0) / 100.0,
-            metrics.get('latency_ms', 0) / 1000.0,
-            metrics.get('packet_loss', 0) / 100.0,
-            metrics.get('signal_strength', -100) / -100.0,
-            metrics.get('interference_level', 0) / 100.0
+            self._normalize_metric(metrics.get('bandwidth_usage', 0), 0, 100),
+            self._normalize_metric(metrics.get('latency_ms', 0), 0, 1000),
+            self._normalize_metric(metrics.get('packet_loss', 0), 0, 100),
+            self._normalize_metric(metrics.get('signal_strength', -100), -100, 0),
+            self._normalize_metric(metrics.get('interference_level', 0), 0, 100)
         ])
 
         # Add derived features
@@ -55,9 +57,22 @@ class NetworkOptimizer:
             self._calculate_interference_impact(metrics)
         ])
 
+        # Detect and handle outliers
+        processed_metrics = self._handle_outliers(processed_metrics)
+
         processed_metrics_array = np.array(processed_metrics).reshape(1, -1)
         logging.info(f"Preprocessed metrics array: {processed_metrics_array}")
         return processed_metrics_array
+
+    def _normalize_metric(self, value: float, min_value: float, max_value: float) -> float:
+        """Normalize a metric to a 0-1 scale"""
+        return (value - min_value) / (max_value - min_value)
+
+    def _handle_outliers(self, data: List[float]) -> List[float]:
+        """Detect and handle outliers in the data"""
+        data_array = np.array(data).reshape(1, -1)
+        anomalies = self.anomaly_detector.fit_predict(data_array)
+        return [0 if anomaly == -1 else value for value, anomaly in zip(data, anomalies)]
 
     logging.basicConfig(level=logging.INFO)
 

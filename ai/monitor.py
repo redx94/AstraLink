@@ -1,5 +1,5 @@
 import json
-
+import psutil
 from sklearn.ensemble import IsolationForest
 
 def detect_anomalies(log_file):
@@ -10,6 +10,23 @@ def detect_anomalies(log_file):
     anomalies = model.fit_predict(data)
     return [log for i, log in enumerate(logs) if anomalies[i] == -1]
 
+def check_node_health():
+    health_status = {
+        "cpu_usage": psutil.cpu_percent(interval=1),
+        "memory_usage": psutil.virtual_memory().percent,
+        "disk_usage": psutil.disk_usage('/').percent,
+        "network_latency": psutil.net_io_counters().bytes_sent  # Placeholder for actual network latency check
+    }
+    return health_status
+
+def monitor_node(log_file):
+    anomalies = detect_anomalies(log_file)
+    health_status = check_node_health()
+    return {
+        "anomalies": anomalies,
+        "health_status": health_status
+    }
+
 # Example usage
-anomalies = detect_anomalies("network_logs.json")
-print("Detected Analomies", anomalies)
+monitoring_result = monitor_node("network_logs.json")
+print("Monitoring Result", monitoring_result)
