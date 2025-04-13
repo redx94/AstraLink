@@ -24,7 +24,7 @@ from quantum.quantum_error_correction import QuantumErrorCorrection
 from network.handshake_integration import HandshakeIntegration
 from tools.security_auditor import SecurityAuditor
 from logging_config import get_logger
-from app.security import security_manager, verify_api_key
+from src.app.security import security_manager, verify_api_key
 
 logger = get_logger(__name__)
 

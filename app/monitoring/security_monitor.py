@@ -7,7 +7,7 @@ import json
 import time
 from pathlib import Path
 from typing import Dict, Any, List
-from app.security import security_manager
+from src.app.security import security_manager
 from .models import SecurityMetrics
 from app.logging_config import get_logger
 from datetime import datetime
