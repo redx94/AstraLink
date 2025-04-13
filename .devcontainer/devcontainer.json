@@ -1,5 +1,6 @@
 {
   "tasks": {
-    "build": "pip install -r requirements.txt && npm install"
+    "build": "pip install -r requirements.txt && npm install",
+    "test": "pip install -r requirements.txt && pytest"
   }
 }
