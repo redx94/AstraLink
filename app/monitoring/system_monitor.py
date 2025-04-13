@@ -5,7 +5,7 @@ Coordinates all monitoring components and provides unified system health checks.
 
 from typing import Dict, Any
 from datetime import datetime
-from app.config import config_manager
+from app.config import get_settings
 from app.logging_config import get_logger
 from .models import HealthStatus
 from .resource_monitor import ResourceMonitor
@@ -20,7 +20,8 @@ class SystemMonitor:
     """System-wide monitoring and health checks"""
     
     def __init__(self):
-        self.config = config_manager.get_value('monitoring', {})
+        self.settings = get_settings()
+        self.config = getattr(self.settings, 'monitoring', {})
         self.thresholds = self.config.get('thresholds', {})
         
         # Initialize monitoring components

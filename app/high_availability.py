@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 import json
 from .logging_config import get_logger
-from .config import config_manager
+from .config import get_settings
 from .monitoring import metrics_collector
 from core.connection_pool import pool_manager
 from core.rate_limiter import rate_limiter
@@ -56,7 +56,8 @@ class LoadBalancingStrategy(Enum):
 class HAManager:
     """High Availability Manager"""
     def __init__(self):
-        self.config = config_manager.get_value('high_availability', {})
+        self.settings = get_settings()
+        self.config = getattr(self.settings, 'high_availability', {})
         self.nodes: Dict[str, Node] = {}
         self.service_nodes: Dict[ServiceType, List[str]] = {
             service_type: [] for service_type in ServiceType
