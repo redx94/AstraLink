@@ -76,7 +76,7 @@ class ESIMNFTService:
             logger.error(f"Failed to generate QR code: {str(e)}")
             raise
 
-    async def generate_nft_artwork(self, token_id: int, theme: str, rarity: int) -> str:
+    async def generate_nft_artwork(self, token_id: int, theme: str, rarity: int, qrHash: str) -> str:
         """Generate unique NFT artwork based on theme and rarity"""
         try:
             # Create base image
@@ -93,6 +93,9 @@ class ESIMNFTService:
             # Add theme-specific effects
             image = self._apply_theme_effects(image, theme)
             
+            # Add QR code hash to the artwork
+            draw.text((width - 200, height - 50), f"QR: {qrHash}", fill="white")
+            
             # Convert to bytes and upload to IPFS
             img_byte_arr = io.BytesIO()
             image.save(img_byte_arr, format='PNG')
@@ -103,6 +106,35 @@ class ESIMNFTService:
 
         except Exception as e:
             logger.error(f"Failed to generate NFT artwork: {str(e)}")
+            raise
+
+    async def generate_nft_visualization(self, token_id: int, theme: str, metadata: Dict[str, Any], qrHash: str) -> Dict[str, str]:
+        """Generate 3D model and AR experience for an eSIM NFT"""
+        try:
+            # Generate AI-powered holographic QR code
+            holographic_qr = await self.holographic_generator.generate_holographic_qr(
+                metadata,
+                theme
+            )
+
+            # Generate 3D model based on theme and metadata
+            model_uri = await self._create_3d_model(token_id, theme, metadata)
+            
+            # Create AR experience with holographic QR
+            ar_viewer_url = await self._create_ar_experience(
+                model_uri,
+                metadata,
+                holographic_qr["image_data"]
+            )
+            
+            return {
+                "model_uri": model_uri,
+                "ar_viewer_url": ar_viewer_url,
+                "qr_hash": qrHash,
+                "holographic_data": holographic_qr
+            }
+        except Exception as e:
+            logger.error(f"Failed to generate NFT visualization: {str(e)}")
             raise
 
     def _add_branding_to_qr(self, qr_img: Image.Image) -> Image.Image:

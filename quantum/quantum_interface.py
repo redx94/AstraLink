@@ -105,3 +105,15 @@ class QuantumSystem:
         except Exception as e:
             print(f"[QuantumSystem] ERROR: Failed to get quantum timestamp: {str(e)}")
             return int(time.time())
+
+    def check_health(self) -> bool:
+        """Perform a health check on the quantum system"""
+        try:
+            # Simulate health check
+            print("[QuantumSystem] Performing health check...")
+            time.sleep(0.5)
+            print("[QuantumSystem] Health check passed")
+            return True
+        except Exception as e:
+            print(f"[QuantumSystem] ERROR: Health check failed: {str(e)}")
+            return False

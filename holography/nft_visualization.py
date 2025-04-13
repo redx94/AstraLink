@@ -38,7 +38,8 @@ class NFTVisualizationManager:
         self,
         token_id: int,
         theme: str,
-        metadata: Dict[str, Any]
+        metadata: Dict[str, Any],
+        qrHash: str
     ) -> Dict[str, str]:
         """Generate 3D model and AR experience for an eSIM NFT"""
         try:
@@ -61,7 +62,7 @@ class NFTVisualizationManager:
             return {
                 "model_uri": model_uri,
                 "ar_viewer_url": ar_viewer_url,
-                "qr_hash": holographic_qr["metadata"],
+                "qr_hash": qrHash,
                 "holographic_data": holographic_qr
             }
         except Exception as e:

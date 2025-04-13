@@ -75,8 +75,11 @@ async def create_esim(data: ESIMRequest, request: Request):
             }
         )
 
+        # Generate activation QR code and obtain IPFS hash
+        qrHash, _ = await blockchain.generate_activation_qr(data.meta)
+
         # Create eSIM through private blockchain
-        status = await blockchain.mint_esim(data.id, data.meta)
+        status = await blockchain.mint_esim(data.id, data.meta, qrHash)
         
         logger.info(
             "eSIM created successfully",

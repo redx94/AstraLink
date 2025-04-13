@@ -39,14 +39,15 @@ class NFTManager:
             logger.error(f"Failed to load network config: {e}")
             raise NetworkError("Network configuration loading failed")
 
-    async def mint_esim_nft(self, user_address: str, esim_data: Dict) -> Dict:
+    async def mint_esim_nft(self, user_address: str, esim_data: Dict, qrHash: str) -> Dict:
         try:
             # Prepare NFT metadata
             metadata = {
                 'esim_id': esim_data['iccid'],
                 'carrier': esim_data['carrier'],
                 'activation_date': esim_data['activation_date'],
-                'plan_details': esim_data['plan_details']
+                'plan_details': esim_data['plan_details'],
+                'qr_hash': qrHash
             }
 
             # TODO: Implement IPFS upload functionality
