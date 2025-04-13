@@ -291,12 +291,21 @@ class SmartContractManager:
     async def get_provider_earnings(self, provider_address: str) -> Dict:
         """Get provider's current earnings"""
         try:
+            cache_key = f"earnings_{provider_address}"
+            cached_data = await self._get_cached_data(cache_key)
+            if cached_data:
+                return cached_data
+
             provider = await self.contract.functions.providers(provider_address).call()
-            return {
+            result = {
                 'address': provider_address,
                 'total_earnings': self.web3.from_wei(provider[3], 'ether'),
                 'commission_rate': provider[1]
             }
+
+            await self._set_cached_data(cache_key, result)
+            return result
+
         except Exception as e:
             raise ContractError(f"Failed to get provider earnings: {str(e)}")
 

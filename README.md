@@ -234,3 +234,61 @@ The NFT functionality can be used in various scenarios within the AstraLink plat
 - **Bandwidth Allocation**: Representing bandwidth allocations as NFTs for trading and management.
 - **Fundraising and Rewards**: Using NFTs for fundraising campaigns and rewarding top contributors.
 - **Quantum Security**: Incorporating quantum security measures to ensure the integrity of the NFTs.
+
+### Enhanced Features
+
+The enhanced NFT functionality in AstraLink includes additional features such as bandwidth management and quantum security. These features are implemented in the `contracts/EnhancedDynamicESIMNFT.sol` smart contract.
+
+#### Bandwidth Management
+
+The `EnhancedDynamicESIMNFT` contract allows for dynamic bandwidth allocation to eSIM NFTs. This feature ensures that each eSIM has the appropriate bandwidth based on its usage and requirements.
+
+Example code snippet for allocating bandwidth:
+```solidity
+function allocateBandwidth(uint256 tokenId, uint256 amount) 
+    external 
+    nonReentrant 
+    onlyOwner 
+{
+    require(_exists(tokenId), "ESIM does not exist");
+    require(esims[tokenId].isActive, "ESIM not active");
+    require(amount <= MAX_BANDWIDTH, "Exceeds maximum bandwidth");
+
+    esims[tokenId].bandwidth = amount;
+    esims[tokenId].lastUpdated = block.timestamp;
+
+    emit BandwidthAllocated(tokenId, amount);
+}
+```
+
+#### Quantum Security
+
+The `EnhancedDynamicESIMNFT` contract also incorporates quantum security measures, such as quantum signature verification. This feature ensures that the NFTs are protected against quantum attacks.
+
+Example code snippet for quantum signature verification:
+```solidity
+modifier validQuantumSignature(bytes32 signature) {
+    require(!usedQuantumSignatures[signature], "Quantum signature already used");
+    usedQuantumSignatures[signature] = true;
+    _;
+}
+```
+
+#### Events for ESIM Activation, Deactivation, and Bandwidth Allocation
+
+The `EnhancedDynamicESIMNFT` contract emits events for ESIM activation, deactivation, and bandwidth allocation. These events provide real-time updates on the status and usage of the eSIM NFTs.
+
+Example code snippet for emitting events:
+```solidity
+event ESIMActivated(uint256 indexed tokenId, uint256 timestamp);
+event ESIMDeactivated(uint256 indexed tokenId, uint256 timestamp);
+event BandwidthAllocated(uint256 indexed tokenId, uint256 amount);
+```
+
+### Enhanced Usage Scenarios
+
+The enhanced NFT functionality can be used in various advanced scenarios within the AstraLink platform, such as:
+
+- **Dynamic Bandwidth Allocation**: Allocating bandwidth to eSIMs based on real-time usage and requirements.
+- **Quantum-Secure Transactions**: Ensuring that all transactions involving NFTs are protected against quantum attacks.
+- **Real-Time Monitoring**: Providing real-time updates on the status and usage of eSIM NFTs through events.

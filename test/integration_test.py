@@ -5,7 +5,7 @@ import asyncio
 import pytest
 import time
 from typing import Dict, Any
-from src.app.security import security_manager
+from app.security import security_manager
 from app.high_availability import ha_manager, NodeRole, NodeState
 from app.monitoring import SystemMonitor
 from quantum.quantum_controller import QuantumController

@@ -1,3 +1,4 @@
+```solidity
 // SPDX-License-Identifier: MIT
 /*
 AstraLink - Enhanced Dynamic eSIM NFT Contract
@@ -191,3 +192,4 @@ contract EnhancedDynamicESIMNFT is ERC721, Ownable, ReentrancyGuard, Pausable {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 }
+```
