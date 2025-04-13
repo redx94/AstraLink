@@ -472,3 +472,181 @@ async def _mint_esim_nft(
         except Exception as e:
             logger.error(f"Entropy calculation failed: {str(e)}")
             return 0.0
+
+    async def _generate_quantum_entropy_pool(self) -> bytes:
+        """Generate a quantum entropy pool for enhanced security"""
+        try:
+            entropy_sources = []
+            
+            # Generate entropy from multiple quantum sources
+            for _ in range(4):
+                circuit = await self._create_key_generation_circuit()
+                measurements = await self._execute_quantum_circuit(circuit)
+                entropy_sources.append(self._process_quantum_measurements(measurements))
+            
+            # Combine entropy sources using quantum XOR
+            combined_entropy = entropy_sources[0]
+            for source in entropy_sources[1:]:
+                combined_entropy = bytes(a ^ b for a, b in zip(combined_entropy, source))
+            
+            # Apply quantum-resistant hash
+            return self.quantum_system.hash(combined_entropy)
+        except Exception as e:
+            logger.error(f"Entropy pool generation failed: {str(e)}")
+            raise QuantumSystemError("Failed to generate entropy pool")
+
+    async def _optimize_quantum_circuit(self, circuit) -> Any:
+        """Optimize quantum circuit for post-quantum resistance"""
+        try:
+            # Apply lattice-based optimization
+            optimized = await self.quantum_system.apply_lattice_optimization(circuit)
+            
+            # Add error detection qubits
+            error_protected = await self.qec.add_error_detection(
+                optimized,
+                detection_strength='maximum'
+            )
+            
+            # Optimize gate depth
+            final_circuit = await self.quantum_system.minimize_gate_depth(
+                error_protected,
+                optimization_level=3
+            )
+            
+            logger.info(
+                "Circuit optimization complete",
+                extra={
+                    'initial_depth': circuit.depth(),
+                    'final_depth': final_circuit.depth(),
+                    'error_detection_qubits': final_circuit.num_error_detection_qubits()
+                }
+            )
+            
+            return final_circuit
+        except Exception as e:
+            logger.error(f"Circuit optimization failed: {str(e)}")
+            raise QuantumSystemError("Failed to optimize quantum circuit")
+
+    async def allocate_dynamic_bandwidth(
+        self,
+        token_id: int,
+        desired_bandwidth: int,
+        quantum_proof: bytes
+    ) -> Dict[str, Any]:
+        """Allocate bandwidth with quantum-secure verification"""
+        try:
+            # Verify quantum proof strength
+            if not self._verify_signature_strength(quantum_proof):
+                raise QuantumSystemError("Insufficient quantum proof strength")
+
+            # Calculate optimal bandwidth allocation using quantum optimization
+            optimal_allocation = await self._optimize_bandwidth_allocation(
+                token_id,
+                desired_bandwidth
+            )
+
+            # Apply quantum noise protection to allocation
+            protected_allocation = await self._apply_quantum_protection(
+                optimal_allocation,
+                quantum_proof
+            )
+
+            # Update blockchain with new allocation
+            tx_hash = await self._update_blockchain_allocation(
+                token_id,
+                protected_allocation['bandwidth'],
+                protected_allocation['quantum_signature']
+            )
+
+            return {
+                "token_id": token_id,
+                "allocated_bandwidth": protected_allocation['bandwidth'],
+                "quantum_security": {
+                    "signature": protected_allocation['quantum_signature'].hex(),
+                    "entropy_score": protected_allocation['entropy_score'],
+                    "verification_proof": tx_hash
+                },
+                "network_metrics": {
+                    "latency": protected_allocation['network_latency'],
+                    "reliability": protected_allocation['reliability_score'],
+                    "congestion_index": protected_allocation['congestion_index']
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Bandwidth allocation failed: {str(e)}")
+            raise
+
+    async def _optimize_bandwidth_allocation(
+        self,
+        token_id: int,
+        desired_bandwidth: int
+    ) -> Dict[str, Any]:
+        """Optimize bandwidth allocation using quantum algorithms"""
+        try:
+            # Get current network metrics
+            network_state = await self._get_network_state()
+
+            # Create quantum circuit for optimization
+            circuit = await self.quantum_system.create_optimization_circuit(
+                desired_bandwidth,
+                network_state
+            )
+
+            # Apply error correction
+            protected_circuit = await self.qec.apply_error_correction(
+                circuit,
+                error_type='all'
+            )
+
+            # Execute quantum optimization
+            result = await self.quantum_system.execute_optimization(
+                protected_circuit,
+                optimization_params={
+                    'max_iterations': 1000,
+                    'convergence_threshold': 0.001,
+                    'noise_model': 'quantum_resistant'
+                }
+            )
+
+            return {
+                'bandwidth': result['optimal_bandwidth'],
+                'network_latency': result['expected_latency'],
+                'reliability_score': result['reliability'],
+                'congestion_index': result['congestion_score']
+            }
+
+        except Exception as e:
+            logger.error(f"Bandwidth optimization failed: {str(e)}")
+            raise
+
+    async def _apply_quantum_protection(
+        self,
+        allocation: Dict[str, Any],
+        quantum_proof: bytes
+    ) -> Dict[str, Any]:
+        """Apply quantum security layer to bandwidth allocation"""
+        try:
+            # Generate quantum entropy
+            entropy = await self.quantum_system.generate_entropy_pool()
+
+            # Create quantum signature for allocation
+            quantum_signature = await self.quantum_system.sign_allocation(
+                allocation,
+                entropy
+            )
+
+            # Verify signature strength
+            entropy_score = self._calculate_shannon_entropy(quantum_signature)
+            if entropy_score < 0.95:
+                raise QuantumSystemError("Insufficient signature entropy")
+
+            return {
+                **allocation,
+                'quantum_signature': quantum_signature,
+                'entropy_score': entropy_score
+            }
+
+        except Exception as e:
+            logger.error(f"Quantum protection failed: {str(e)}")
+            raise

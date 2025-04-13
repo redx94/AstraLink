@@ -142,6 +142,164 @@ class ESIMNFTService:
             logger.error(f"Failed to generate NFT visualization: {str(e)}")
             raise
 
+    async def generate_quantum_holographic_qr(self, esim_data: Dict[str, Any], style_theme: str) -> Dict[str, Any]:
+        """Generate quantum-secure holographic QR code with embedded security features"""
+        try:
+            # Create base QR with quantum entropy
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_H,
+                box_size=10,
+                border=4,
+            )
+            
+            # Add quantum watermark
+            quantum_watermark = await self.quantum_system.generate_watermark()
+            
+            # Combine eSIM data with quantum watermark
+            secured_data = {
+                **esim_data,
+                "quantum_watermark": quantum_watermark.hex(),
+                "timestamp": int(time.time())
+            }
+            
+            qr.add_data(json.dumps(secured_data))
+            qr.make(fit=True)
+            qr_img = qr.make_image(fill_color="white", back_color="transparent")
+
+            # Generate holographic elements based on theme and rarity
+            holographic_elements = await self._generate_themed_holographics(
+                style_theme,
+                esim_data["rarity"]
+            )
+
+            # Apply quantum-resistant steganography
+            final_image = await self._apply_quantum_steganography(
+                qr_img,
+                holographic_elements,
+                quantum_watermark
+            )
+
+            return {
+                "image": self._convert_to_base64(final_image),
+                "verification": {
+                    "quantum_watermark": quantum_watermark.hex(),
+                    "holographic_signature": await self._generate_holographic_signature(final_image)
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to generate holographic QR: {str(e)}")
+            raise
+
+    async def analyze_marketplace_trends(self, token_id: int) -> Dict[str, Any]:
+        """Analyze marketplace trends with quantum-resistant analytics"""
+        try:
+            # Get historical price data
+            market_history = await self.contract.functions.getMarketplaceHistory(token_id).call()
+            
+            # Apply quantum noise reduction to price data
+            cleaned_prices = await self.quantum_system.denoise_data(
+                market_history['historicalPrices']
+            )
+            
+            # Generate AI price prediction
+            prediction = await self._generate_price_prediction(
+                cleaned_prices,
+                market_history['totalTransfers']
+            )
+            
+            # Add quantum entropy for prediction security
+            secured_prediction = await self._secure_prediction_with_quantum(prediction)
+            
+            return {
+                "token_id": token_id,
+                "predicted_price_range": {
+                    "min": secured_prediction['min_price'],
+                    "max": secured_prediction['max_price'],
+                    "confidence": secured_prediction['confidence']
+                },
+                "market_metrics": {
+                    "volatility": self._calculate_price_volatility(cleaned_prices),
+                    "volume_trend": self._analyze_volume_trend(market_history['totalTransfers']),
+                    "holder_diversity": len(market_history['previousOwners'])
+                },
+                "quantum_security": {
+                    "entropy_score": secured_prediction['entropy_score'],
+                    "confidence_interval": secured_prediction['confidence_interval']
+                }
+            }
+        except Exception as e:
+            logger.error(f"Failed to analyze marketplace trends: {str(e)}")
+            raise
+
+    async def _generate_price_prediction(
+        self,
+        price_history: List[int],
+        total_transfers: int
+    ) -> Dict[str, Any]:
+        """Generate AI-powered price prediction"""
+        try:
+            # Create feature set for prediction
+            features = self._extract_price_features(price_history)
+            
+            # Add market dynamics features
+            features.update({
+                "transfer_velocity": total_transfers / len(price_history),
+                "price_momentum": self._calculate_price_momentum(price_history),
+                "market_depth": self._analyze_market_depth(price_history)
+            })
+            
+            # Generate prediction using quantum-classical hybrid model
+            prediction = await self.ai_model.predict_with_quantum_enhancement(
+                features,
+                confidence_threshold=0.95
+            )
+            
+            return prediction
+            
+        except Exception as e:
+            logger.error(f"Price prediction failed: {str(e)}")
+            raise
+
+    async def _secure_prediction_with_quantum(self, prediction: Dict[str, Any]) -> Dict[str, Any]:
+        """Add quantum security layer to price prediction"""
+        try:
+            # Generate quantum entropy
+            entropy = await self.quantum_system.generate_entropy()
+            
+            # Apply quantum noise for security
+            secured = self.quantum_system.apply_noise_protection(prediction, entropy)
+            
+            # Calculate confidence metrics
+            confidence_interval = self._calculate_quantum_confidence(
+                secured['prediction'],
+                entropy
+            )
+            
+            return {
+                **secured,
+                'entropy_score': self._calculate_entropy_score(entropy),
+                'confidence_interval': confidence_interval
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to secure prediction: {str(e)}")
+            raise
+
+    async def _generate_themed_holographics(self, theme: str, rarity: int) -> List[Image.Image]:
+        """Generate theme-specific holographic elements"""
+        themes = {
+            "quantum": self._generate_quantum_visuals,
+            "cosmic": self._generate_cosmic_visuals,
+            "cyber": self._generate_cyberpunk_visuals,
+            "nebula": self._generate_nebula_visuals,
+            "matrix": self._generate_matrix_visuals
+        }
+        
+        generator = themes.get(theme, self._generate_quantum_visuals)
+        return await generator(rarity)
+
     def _add_branding_to_qr(self, qr_img: Image.Image) -> Image.Image:
         """Add AstraLink branding to QR code"""
         # Create new image with padding for branding

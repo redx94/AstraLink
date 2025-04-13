@@ -22,12 +22,21 @@ contract ESIMBenefitsManager is Ownable {
         bool quantumEncryption;   // Access to quantum encryption
     }
 
+    struct QuantumBonus {
+        uint256 encryptionStrength;    // Quantum encryption strength bonus (1-100)
+        uint256 routingPriority;       // Priority in quantum-secured routes
+        bool quantumResistance;        // Access to quantum-resistant features
+        uint256 bandwidthMultiplier;   // Additional bandwidth multiplier
+    }
+    
     mapping(string => ThemeBenefits) public themeBenefits;
     mapping(uint256 => uint256) public tokenBonusPoints;
+    mapping(uint256 => QuantumBonus) public quantumBonuses;
 
     event BenefitsUpdated(uint256 indexed tokenId, uint256 multiplier);
     event ThemeBenefitsConfigured(string theme);
     event BonusPointsEarned(uint256 indexed tokenId, uint256 points);
+    event QuantumBonusUpdated(uint256 indexed tokenId, uint256 encryptionStrength, uint256 routingPriority);
 
     constructor(address _esimNFTAddress) {
         esimNFT = EnhancedDynamicESIMNFT(_esimNFTAddress);
@@ -114,6 +123,26 @@ contract ESIMBenefitsManager is Ownable {
         );
     }
 
+    function calculateQuantumBenefits(uint256 tokenId) public view returns (
+        uint256 totalSpeedMultiplier,
+        uint256 encryptionLevel,
+        uint256 routingPriority,
+        bool hasQuantumResistance
+    ) {
+        EnhancedDynamicESIMNFT.ESIM memory esim = esimNFT.esims(tokenId);
+        ThemeBenefits memory themeBenefit = themeBenefits[esim.designTheme];
+        QuantumBonus memory qBonus = quantumBonuses[tokenId];
+        
+        // Calculate base multiplier from theme and rarity
+        uint256 baseMultiplier = _calculateBaseMultiplier(esim.rarity, themeBenefit.speedBoost);
+        
+        // Apply quantum bonuses
+        totalSpeedMultiplier = baseMultiplier + qBonus.bandwidthMultiplier;
+        encryptionLevel = qBonus.encryptionStrength;
+        routingPriority = qBonus.routingPriority;
+        hasQuantumResistance = qBonus.quantumResistance;
+    }
+
     function earnBonusPoints(uint256 tokenId, uint256 dataUsed) external onlyOwner {
         EnhancedDynamicESIMNFT.ESIM memory esim = esimNFT.esims(tokenId);
         require(esim.id == tokenId, "eSIM not found");
@@ -144,6 +173,26 @@ contract ESIMBenefitsManager is Ownable {
         emit ThemeBenefitsConfigured(theme);
     }
 
+    function updateQuantumBonus(
+        uint256 tokenId,
+        uint256 encryptionStrength,
+        uint256 routingPriority,
+        bool quantumResistance,
+        uint256 bandwidthMultiplier
+    ) external onlyOwner {
+        require(encryptionStrength <= 100, "Invalid encryption strength");
+        require(routingPriority <= 100, "Invalid routing priority");
+        
+        quantumBonuses[tokenId] = QuantumBonus({
+            encryptionStrength: encryptionStrength,
+            routingPriority: routingPriority,
+            quantumResistance: quantumResistance,
+            bandwidthMultiplier: bandwidthMultiplier
+        });
+        
+        emit QuantumBonusUpdated(tokenId, encryptionStrength, routingPriority);
+    }
+
     function redeemBonusPoints(uint256 tokenId, uint256 points) external {
         EnhancedDynamicESIMNFT.ESIM memory esim = esimNFT.esims(tokenId);
         require(esim.owner == msg.sender, "Not the token owner");
@@ -152,5 +201,16 @@ contract ESIMBenefitsManager is Ownable {
         tokenBonusPoints[tokenId] -= points;
         // Implementation of rewards redemption would go here
         // Could include: extra data, temporary speed boosts, etc.
+    }
+
+    function _calculateBaseMultiplier(uint256 rarity, uint256 themeBoost) internal pure returns (uint256) {
+        // Rarity tiers: Legendary (950-1000), Epic (850-949), Rare (700-849), Common (1-699)
+        uint256 rarityMultiplier;
+        if (rarity >= 950) rarityMultiplier = LEGENDARY_MULTIPLIER;      // 5x
+        else if (rarity >= 850) rarityMultiplier = EPIC_MULTIPLIER;      // 3x
+        else if (rarity >= 700) rarityMultiplier = RARE_MULTIPLIER;      // 2x
+        else rarityMultiplier = COMMON_MULTIPLIER;                       // 1x
+        
+        return (themeBoost * rarityMultiplier) / 100;
     }
 }

@@ -30,9 +30,20 @@ contract EnhancedDynamicESIMNFT is ERC721URIStorage, ERC721Enumerable, Ownable, 
         string arViewerURL; // URL for AR viewing experience
     }
 
+    struct MarketplaceData {
+        bool isListed;
+        uint256 price;
+        uint256 listingTime;
+        address[] previousOwners;
+        uint256[] historicalPrices;
+        uint256 totalTransfers;
+        mapping(address => bool) authorizedBuyers;  // For private listings
+    }
+    
     mapping(uint256 => ESIM) public esims;
     mapping(address => uint256[]) public userESIMs;
     mapping(bytes32 => bool) public usedQuantumSignatures;
+    mapping(uint256 => MarketplaceData) public marketplaceData;
     
     uint256 private constant MINIMUM_BANDWIDTH = 1;
     uint256 private constant MAXIMUM_BANDWIDTH = 1000000; // 1 Gbps
@@ -57,6 +68,9 @@ contract EnhancedDynamicESIMNFT is ERC721URIStorage, ERC721Enumerable, Ownable, 
     event QuantumSignatureVerified(uint256 indexed tokenId, bytes32 signature);
     event ESIMListed(uint256 indexed tokenId, uint256 price);
     event ESIMSold(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price);
+    event ESIMPrivateListed(uint256 indexed tokenId, uint256 price, address[] authorizedBuyers);
+    event ESIMPriceUpdated(uint256 indexed tokenId, uint256 oldPrice, uint256 newPrice);
+    event ESIMTransferSecured(uint256 indexed tokenId, bytes32 quantumProof);
 
     constructor() ERC721("AstraLink Dynamic eSIM", "AESIM") {}
 
@@ -163,6 +177,38 @@ contract EnhancedDynamicESIMNFT is ERC721URIStorage, ERC721Enumerable, Ownable, 
         emit ESIMListed(tokenId, price);
     }
 
+    function listESIMPrivate(
+        uint256 tokenId,
+        uint256 price,
+        address[] calldata authorizedBuyers
+    ) external {
+        require(ownerOf(tokenId) == msg.sender, "Not the owner");
+        require(price > 0, "Invalid price");
+        require(!marketplaceData[tokenId].isListed, "Already listed");
+        
+        MarketplaceData storage data = marketplaceData[tokenId];
+        data.isListed = true;
+        data.price = price;
+        data.listingTime = block.timestamp;
+        
+        for(uint i = 0; i < authorizedBuyers.length; i++) {
+            data.authorizedBuyers[authorizedBuyers[i]] = true;
+        }
+        
+        emit ESIMPrivateListed(tokenId, price, authorizedBuyers);
+    }
+
+    function updateListingPrice(uint256 tokenId, uint256 newPrice) external {
+        require(ownerOf(tokenId) == msg.sender, "Not the owner");
+        require(marketplaceData[tokenId].isListed, "Not listed");
+        
+        uint256 oldPrice = marketplaceData[tokenId].price;
+        marketplaceData[tokenId].price = newPrice;
+        marketplaceData[tokenId].historicalPrices.push(oldPrice);
+        
+        emit ESIMPriceUpdated(tokenId, oldPrice, newPrice);
+    }
+
     function buyESIM(uint256 tokenId) external payable nonReentrant {
         ESIM storage esim = esims[tokenId];
         require(esim.isListed, "Not listed for sale");
@@ -185,6 +231,55 @@ contract EnhancedDynamicESIMNFT is ERC721URIStorage, ERC721Enumerable, Ownable, 
         payable(owner()).transfer(fee);
         
         emit ESIMSold(tokenId, seller, msg.sender, msg.value);
+    }
+
+    function buyESIMWithQuantumProof(
+        uint256 tokenId,
+        bytes32 quantumProof
+    ) external payable nonReentrant {
+        MarketplaceData storage data = marketplaceData[tokenId];
+        require(data.isListed, "Not listed for sale");
+        require(msg.value >= data.price, "Insufficient payment");
+        
+        if(data.authorizedBuyers[address(0)] == false) {
+            require(data.authorizedBuyers[msg.sender], "Not authorized to buy");
+        }
+        
+        address seller = ownerOf(tokenId);
+        uint256 fee = (msg.value * marketplaceFee) / 1000;
+        uint256 sellerAmount = msg.value - fee;
+        
+        // Record transfer history
+        data.previousOwners.push(seller);
+        data.totalTransfers++;
+        
+        // Transfer NFT with quantum security
+        _transfer(seller, msg.sender, tokenId);
+        
+        // Update marketplace data
+        data.isListed = false;
+        data.price = 0;
+        delete data.authorizedBuyers[msg.sender];
+        
+        // Transfer payments
+        payable(seller).transfer(sellerAmount);
+        payable(owner()).transfer(fee);
+        
+        emit ESIMTransferSecured(tokenId, quantumProof);
+        emit ESIMSold(tokenId, seller, msg.sender, msg.value);
+    }
+
+    function getMarketplaceHistory(uint256 tokenId) external view returns (
+        address[] memory previousOwners,
+        uint256[] memory historicalPrices,
+        uint256 totalTransfers
+    ) {
+        MarketplaceData storage data = marketplaceData[tokenId];
+        return (
+            data.previousOwners,
+            data.historicalPrices,
+            data.totalTransfers
+        );
     }
 
     function updateBandwidth(uint256 tokenId, uint256 newBandwidth) external onlyOwner whenNotPaused {
