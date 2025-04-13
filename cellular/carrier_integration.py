@@ -22,48 +22,90 @@ logger = logging.getLogger(__name__)
 class CarrierIntegration:
     def __init__(self, quantum_system, blockchain_manager):
         self.quantum_system = quantum_system
-        self.blockchain = blockchain_manager
-        self.active_profiles = {}
-        self.carrier_connections = {}
+        self.blockchain_manager = blockchain_manager
         self.activation_queue = asyncio.Queue()
-        self.supported_carriers = {
-            "t-mobile": "https://api.t-mobile.com/esim/v1",
-            "att": "https://api.att.com/esim/v1",
-            "verizon": "https://api.verizon.com/esim/v1"
-        }
+        self.profile_cache = {}
+        self.handshake = HandshakeIntegration()
+        self.metrics_monitor = NetworkMetricsMonitor()
+        self.load_balancer = CarrierLoadBalancer()
 
     async def get_data_plans(self, carrier: str) -> List[Dict]:
-        """Get available data plans from carrier"""
-        if carrier not in self.supported_carriers:
-            raise CarrierError("Unsupported carrier")
-
-        async with aiohttp.ClientSession() as session:
-            url = f"{self.supported_carriers[carrier]}/plans"
-            async with session.get(url) as response:
-                return await response.json()
+        """Get available data plans from carrier with dynamic pricing"""
+        try:
+            # Get network metrics for dynamic pricing
+            network_metrics = await self.metrics_monitor.get_network_metrics(carrier)
+            market_demand = await self._analyze_market_demand(carrier)
+            
+            base_plans = await self._fetch_carrier_plans(carrier)
+            
+            # Apply dynamic pricing based on network conditions
+            adjusted_plans = await self._adjust_plan_pricing(
+                base_plans,
+                network_metrics,
+                market_demand
+            )
+            
+            # Add quantum security features
+            secured_plans = await self._add_quantum_features(adjusted_plans)
+            
+            return secured_plans
+            
+        except Exception as e:
+            logger.error(f"Failed to fetch data plans: {str(e)}")
+            raise
 
     async def purchase_plan(self, carrier: str, plan_id: str, payment_info: Dict) -> Dict:
-        """Purchase a data plan and get activation code"""
-        if carrier not in self.supported_carriers:
-            raise CarrierError("Unsupported carrier")
+        """Purchase data plan with quantum-secure verification"""
+        try:
+            # Verify carrier availability
+            carrier_status = await self._verify_carrier_status(carrier)
+            if not carrier_status['available']:
+                raise CarrierUnavailableError(f"Carrier {carrier} unavailable")
 
-        purchase_data = {
-            "planId": plan_id,
-            "payment": payment_info
-        }
+            # Create quantum-secured payment channel
+            payment_channel = await self._create_quantum_payment_channel(
+                carrier,
+                payment_info
+            )
 
-        async with aiohttp.ClientSession() as session:
-            url = f"{self.supported_carriers[carrier]}/purchase"
-            async with session.post(url, json=purchase_data) as response:
-                result = await response.json()
-                return {
-                    "activation_code": result["activationCode"],
-                    "iccid": result["iccid"],
-                    "plan_details": result["planDetails"]
-                }
+            # Process payment with revenue distribution
+            payment_result = await self._process_payment_with_distribution(
+                payment_channel,
+                payment_info
+            )
+
+            if not payment_result['success']:
+                raise PaymentError("Payment failed")
+
+            # Generate quantum-secured activation code
+            activation_code = await self._generate_activation_code(
+                plan_id,
+                payment_result['transaction_id']
+            )
+
+            # Register with carrier's quantum network
+            carrier_registration = await self._register_with_carrier(
+                carrier,
+                activation_code,
+                payment_result
+            )
+
+            return {
+                "status": "success",
+                "iccid": carrier_registration['iccid'],
+                "activation_code": activation_code,
+                "quantum_signature": carrier_registration['quantum_signature'],
+                "plan_details": carrier_registration['plan_details']
+            }
+
+        except Exception as e:
+            logger.error(f"Plan purchase failed: {str(e)}")
+            raise
 
     async def activate_esim_profile(
-        self, token_id: int, carrier_data: Dict[str, Any]
+        self,
+        token_id: int,
+        carrier_data: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Activate eSIM profile with quantum-secure carrier integration"""
         try:
@@ -117,21 +159,22 @@ class CarrierIntegration:
             # Create quantum circuit for token generation
             circuit = await self.quantum_system.create_token_circuit()
             
-            # Apply quantum error correction
-            protected_circuit = await self.quantum_system.apply_error_correction(circuit)
+            # Add error correction
+            protected_circuit = await self.quantum_system.add_error_correction(circuit)
             
-            # Execute circuit and measure results
+            # Execute circuit and get measurements
             measurements = await self.quantum_system.execute_circuit(protected_circuit)
             
-            # Generate secure token from measurements
-            token = await self.quantum_system.generate_secure_token(measurements)
+            # Generate token from measurements
+            token = await self.quantum_system.generate_token(measurements)
             
             # Calculate entropy score
-            entropy_score = self.quantum_system.calculate_entropy(token)
+            entropy_score = self.quantum_system.calculate_entropy(token['signature'])
             
             return {
-                'token': token,
-                'signature': self.quantum_system.sign_data(token),
+                'token': token['token'],
+                'signature': token['signature'],
+                'circuit_id': protected_circuit.id,
                 'entropy_score': entropy_score
             }
             
@@ -145,7 +188,7 @@ class CarrierIntegration:
         carrier_data: Dict[str, Any],
         connection: Any
     ) -> Dict[str, Any]:
-        """Create quantum-protected eSIM profile"""
+        """Create quantum-protected eSIM profile with enhanced security"""
         try:
             # Generate quantum-safe profile data
             profile_data = {
@@ -153,7 +196,12 @@ class CarrierIntegration:
                 'carrier_id': carrier_data['carrier_id'],
                 'package_type': carrier_data['package_type'],
                 'validity_period': carrier_data['validity_period'],
-                'quantum_protection': True
+                'quantum_protection': True,
+                'network_features': {
+                    'qos_level': carrier_data.get('qos_level', 3),
+                    'bandwidth_guarantee': carrier_data.get('bandwidth_guarantee', True),
+                    'priority_routing': carrier_data.get('priority_routing', False)
+                }
             }
             
             # Apply quantum encryption to sensitive data
@@ -162,13 +210,33 @@ class CarrierIntegration:
                 connection.encryption_key
             )
             
-            # Create profile through carrier API
-            response = await connection.api.create_profile(encrypted_profile)
+            # Create profile through carrier API with load balancing
+            balanced_connection = await self.load_balancer.get_optimal_connection(
+                carrier_data['carrier_id']
+            )
             
-            # Verify profile creation
-            if not await self._verify_profile_creation(response, token_id):
+            response = await balanced_connection.api.create_profile(
+                encrypted_profile,
+                {
+                    'quantum_signature': encrypted_profile['quantum_signature'],
+                    'timestamp': int(time.time())
+                }
+            )
+            
+            # Verify profile creation with quantum proof
+            if not await self._verify_profile_creation(
+                response,
+                token_id,
+                encrypted_profile['quantum_signature']
+            ):
                 raise ValidationError("Profile creation verification failed")
-                
+            
+            # Cache profile for quick access
+            self.profile_cache[token_id] = {
+                'profile': response['profile'],
+                'last_updated': int(time.time())
+            }
+            
             return response['profile']
             
         except Exception as e:
@@ -178,31 +246,78 @@ class CarrierIntegration:
     async def _verify_profile_creation(
         self,
         response: Dict[str, Any],
-        token_id: int
+        token_id: int,
+        quantum_signature: bytes
     ) -> bool:
-        """Verify profile creation with quantum validation"""
+        """Verify profile creation with quantum proof"""
         try:
-            # Extract verification data
-            verification_data = response.get('verification_data', {})
-            
-            # Verify quantum signature
-            is_valid = await self.quantum_system.verify_signature(
-                verification_data.get('signature'),
-                verification_data.get('data')
+            # Verify response signature
+            signature_valid = await self.quantum_system.verify_signature(
+                response['signature'],
+                quantum_signature
             )
             
-            if not is_valid:
-                logger.error(f"Signature verification failed for token {token_id}")
+            if not signature_valid:
                 return False
             
-            # Verify profile integrity
-            profile_valid = await self._verify_profile_integrity(
+            # Verify profile data integrity
+            data_valid = await self._verify_profile_data(
                 response['profile'],
-                verification_data.get('integrity_proof')
+                token_id
             )
             
-            return profile_valid
+            return data_valid
             
         except Exception as e:
             logger.error(f"Profile verification failed: {str(e)}")
             return False
+
+    async def _establish_carrier_connection(
+        self,
+        carrier_id: str,
+        activation_token: Dict[str, Any]
+    ) -> Any:
+        """Establish secure connection with carrier"""
+        try:
+            # Get optimal carrier endpoint
+            endpoint = await self.load_balancer.get_optimal_endpoint(carrier_id)
+            
+            # Create quantum-secured connection
+            connection = await self.quantum_system.create_secure_connection(
+                endpoint,
+                activation_token['signature']
+            )
+            
+            # Verify connection security
+            if not await self._verify_connection_security(connection):
+                raise SecurityError("Connection security verification failed")
+            
+            return connection
+            
+        except Exception as e:
+            logger.error(f"Connection establishment failed: {str(e)}")
+            raise
+
+    async def _process_activation(self, profile: Dict[str, Any]) -> Dict[str, Any]:
+        """Process eSIM activation with quantum verification"""
+        try:
+            # Verify profile status
+            status = await self._check_profile_status(profile['id'])
+            if status != 'ready':
+                raise ActivationError(f"Profile not ready: {status}")
+            
+            # Create activation request with quantum signature
+            activation_request = await self._create_activation_request(profile)
+            
+            # Send request through quantum-secure channel
+            response = await self._send_activation_request(activation_request)
+            
+            # Verify activation success with quantum proof
+            if not await self._verify_activation_success(response):
+                raise ActivationError("Activation verification failed")
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Activation processing failed: {str(e)}")
+            raise

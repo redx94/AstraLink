@@ -26,6 +26,10 @@ logger = get_logger(__name__)
 class ESIMNFTService:
     def __init__(self, ipfs_client=None):
         self.ipfs_client = ipfs_client or aioipfs.AsyncIPFS()
+        self.holographic_generator = HolographicQRGenerator()
+        self.network_monitor = NetworkMetricsMonitor()
+        self.ai_optimizer = AIBandwidthOptimizer()
+        self.quantum_verifier = QuantumVerifier()
         self.theme_colors = {
             "cosmic": [(25, 25, 112), (138, 43, 226), (75, 0, 130)],  # Deep space blues and purples
             "quantum": [(0, 255, 255), (255, 0, 255), (0, 255, 0)],   # Bright quantum colors
@@ -36,9 +40,9 @@ class ESIMNFTService:
         self.handshake = HandshakeIntegration()
 
     async def generate_activation_qr(self, esim_data: Dict[str, Any]) -> Tuple[str, bytes]:
-        """Generate QR code for eSIM activation and upload to IPFS"""
+        """Generate quantum-secure holographic QR code with enhanced security features"""
         try:
-            # Create QR code with eSIM activation data
+            # Create quantum-secured QR code
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_H,
@@ -46,39 +50,47 @@ class ESIMNFTService:
                 border=4,
             )
             
-            # Format eSIM activation data
+            # Enhanced activation data with quantum security
             activation_data = {
                 "type": "eSIM",
                 "carrier": esim_data["carrier"],
                 "activationCode": esim_data["activation_code"],
                 "tokenId": esim_data["token_id"],
-                "bandwidth": esim_data["bandwidth"]
+                "bandwidth": esim_data["bandwidth"],
+                "quantum_verification": await self._generate_quantum_verification(esim_data),
+                "timestamp": int(time.time()),
+                "network_signature": await self._generate_network_signature(esim_data)
             }
             
             qr.add_data(json.dumps(activation_data))
             qr.make(fit=True)
 
-            # Create QR code image
-            qr_img = qr.make_image(fill_color="black", back_color="white")
+            # Generate holographic QR with quantum noise pattern
+            qr_img = await self.holographic_generator.generate_secure_qr(
+                qr,
+                style_theme=esim_data.get("theme", "quantum"),
+                security_level="maximum"
+            )
             
-            # Add AstraLink branding
-            final_img = self._add_branding_to_qr(qr_img)
+            # Add quantum watermark
+            watermarked_img = await self._add_quantum_watermark(qr_img)
             
-            # Convert to bytes
+            # Convert to bytes and upload to IPFS
             img_byte_arr = io.BytesIO()
-            final_img.save(img_byte_arr, format='PNG')
+            watermarked_img.save(img_byte_arr, format='PNG')
             img_bytes = img_byte_arr.getvalue()
             
-            # Upload to IPFS
-            ipfs_hash = await self.ipfs_client.add(img_bytes)
+            # Upload to IPFS with encryption
+            encrypted_bytes = await self._encrypt_for_ipfs(img_bytes)
+            ipfs_hash = await self.ipfs_client.add(encrypted_bytes)
             
-            # Update DNS records with QR code IPFS hash
-            await self.handshake.update_nft_esim_dns_records(esim_data["token_id"], ipfs_hash)
+            # Update DNS records
+            await self._update_dns_records(esim_data["token_id"], ipfs_hash)
             
             return ipfs_hash, img_bytes
 
         except Exception as e:
-            logger.error(f"Failed to generate QR code: {str(e)}")
+            logger.error(f"Failed to generate enhanced QR code: {str(e)}")
             raise
 
     async def generate_nft_artwork(self, token_id: int, theme: str, rarity: int, qrHash: str) -> str:
@@ -231,6 +243,111 @@ class ESIMNFTService:
             }
         except Exception as e:
             logger.error(f"Failed to analyze marketplace trends: {str(e)}")
+            raise
+
+    async def update_network_metrics(self, token_id: int) -> Dict[str, Any]:
+        """Update network performance metrics for eSIM"""
+        try:
+            metrics = await self.network_monitor.get_current_metrics(token_id)
+            
+            # AI-enhanced metric analysis
+            analyzed_metrics = await self.ai_optimizer.analyze_metrics(metrics)
+            
+            # Update smart contract
+            tx = await self.contract.functions.updateNetworkMetrics(
+                token_id,
+                analyzed_metrics['latency'],
+                analyzed_metrics['reliability'],
+                analyzed_metrics['congestion_index'],
+                analyzed_metrics['qos_level']
+            ).build_transaction({
+                'from': self.web3.eth.defaultAccount,
+                'gas': 200000,
+                'nonce': await self.web3.eth.get_transaction_count(self.web3.eth.defaultAccount)
+            })
+            
+            signed_tx = self.web3.eth.account.sign_transaction(tx, self.private_key)
+            tx_hash = await self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            await self.web3.eth.wait_for_transaction_receipt(tx_hash)
+            
+            return analyzed_metrics
+
+        except Exception as e:
+            logger.error(f"Failed to update network metrics: {str(e)}")
+            raise
+
+    async def calculate_bonus_points(self, token_id: int, data_usage: int) -> Dict[str, Any]:
+        """Calculate and award bonus points based on usage and performance"""
+        try:
+            # Get current performance metrics
+            metrics = await self.network_monitor.get_current_metrics(token_id)
+            performance_score = await self._calculate_performance_score(metrics)
+            
+            # Award bonus points through smart contract
+            tx = await self.contract.functions.earnBonusPoints(
+                token_id,
+                data_usage
+            ).build_transaction({
+                'from': self.web3.eth.defaultAccount,
+                'gas': 200000,
+                'nonce': await self.web3.eth.get_transaction_count(self.web3.eth.defaultAccount)
+            })
+            
+            signed_tx = self.web3.eth.account.sign_transaction(tx, self.private_key)
+            tx_hash = await self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = await self.web3.eth.wait_for_transaction_receipt(tx_hash)
+            
+            # Extract bonus points from event
+            bonus_event = self.contract.events.BonusPointsEarned().process_receipt(receipt)[0]
+            
+            return {
+                'points_earned': bonus_event['args']['points'],
+                'multiplier': bonus_event['args']['multiplier'],
+                'performance_score': performance_score
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to calculate bonus points: {str(e)}")
+            raise
+
+    async def optimize_bandwidth(self, token_id: int, requested_bandwidth: int) -> Dict[str, Any]:
+        """Optimize bandwidth allocation using AI and network metrics"""
+        try:
+            # Get current network state
+            metrics = await self.network_monitor.get_current_metrics(token_id)
+            
+            # AI optimization
+            optimized = await self.ai_optimizer.optimize_bandwidth(
+                requested_bandwidth,
+                metrics,
+                {'token_id': token_id}
+            )
+            
+            # Update bandwidth through smart contract
+            tx = await self.contract.functions.updateBandwidth(
+                token_id,
+                optimized['recommended_bandwidth']
+            ).build_transaction({
+                'from': self.web3.eth.defaultAccount,
+                'gas': 200000,
+                'nonce': await self.web3.eth.get_transaction_count(self.web3.eth.defaultAccount)
+            })
+            
+            signed_tx = self.web3.eth.account.sign_transaction(tx, self.private_key)
+            tx_hash = await self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+            receipt = await self.web3.eth.wait_for_transaction_receipt(tx_hash)
+            
+            bandwidth_event = self.contract.events.ESIMBandwidthUpdated().process_receipt(receipt)[0]
+            
+            return {
+                'token_id': token_id,
+                'new_bandwidth': bandwidth_event['args']['newBandwidth'],
+                'performance_score': bandwidth_event['args']['performanceScore'],
+                'optimization_factors': optimized['factors']
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to optimize bandwidth: {str(e)}")
             raise
 
     async def _generate_price_prediction(
@@ -392,3 +509,23 @@ class ESIMNFTService:
                 draw.text((x, y), char, fill=(0, 255, 0, 150))
                 
         return image
+
+    async def _generate_quantum_verification(self, esim_data: Dict[str, Any]) -> str:
+        """Generate quantum-secure verification data"""
+        return await self.quantum_verifier.generate_verification(esim_data)
+
+    async def _generate_network_signature(self, esim_data: Dict[str, Any]) -> str:
+        """Generate network-specific signature for eSIM activation"""
+        return await self.network_monitor.generate_signature(esim_data)
+
+    async def _add_quantum_watermark(self, image: Image) -> Image:
+        """Add quantum-secure watermark to QR code"""
+        return await self.holographic_generator.add_quantum_watermark(image)
+
+    async def _encrypt_for_ipfs(self, data: bytes) -> bytes:
+        """Encrypt data before IPFS upload"""
+        return await self.quantum_verifier.encrypt_data(data)
+
+    async def _update_dns_records(self, token_id: int, ipfs_hash: str):
+        """Update DNS records with new IPFS hash"""
+        await self.handshake.update_nft_esim_dns_records(token_id, ipfs_hash)

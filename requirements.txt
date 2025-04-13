@@ -17,3 +17,5 @@ accelerate>=0.21.0
 qiskit>=0.44.0
 qiskit-aer>=0.12.0
 scipy>=1.11.0
+gymnasium>=0.29.1
+collections-deque>=0.1.2

@@ -1,372 +1,317 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Base64.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "./QuantumVerifier.sol";
+import "./ESIMBenefitsManager.sol";
 
-contract EnhancedDynamicESIMNFT is ERC721URIStorage, ERC721Enumerable, Ownable, Pausable, ReentrancyGuard {
-    using Strings for uint256;
+/**
+ * @title EnhancedDynamicESIMNFT
+ * @dev Advanced eSIM NFT implementation with quantum security and dynamic features
+ */
+contract EnhancedDynamicESIMNFT is 
+    ERC721, 
+    ERC721Enumerable, 
+    ERC721URIStorage, 
+    ReentrancyGuard, 
+    AccessControl 
+{
+    using Counters for Counters.Counter;
 
-    struct ESIM {
-        uint256 id;
-        address owner;
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant QUANTUM_OPERATOR_ROLE = keccak256("QUANTUM_OPERATOR_ROLE");
+
+    Counters.Counter private _tokenIdCounter;
+    
+    // External contract references
+    QuantumVerifier public quantumVerifier;
+    ESIMBenefitsManager public benefitsManager;
+
+    struct ESIMData {
+        string carrier;
         uint256 bandwidth;
-        uint256 activationTime;
-        uint256 expirationTime;
-        bytes32 quantumSignature;
-        string status; // active, suspended, expired
-        string carrierData;
-        bool quantumVerified;
-        string designTheme; // cosmic, quantum, cyber, etc.
-        uint256 rarity; // 1-1000 scale
-        string activationQR; // IPFS hash of the QR code
-        bool isListed; // for marketplace
-        uint256 price; // if listed
-        string modelURI; // IPFS hash of the 3D model
-        string arViewerURL; // URL for AR viewing experience
+        uint256 validUntil;
+        string theme;
+        uint256 rarityScore;
+        bytes32 quantumProof;
+        bool active;
     }
 
-    struct MarketplaceData {
-        bool isListed;
-        uint256 price;
-        uint256 listingTime;
-        address[] previousOwners;
-        uint256[] historicalPrices;
-        uint256 totalTransfers;
-        mapping(address => bool) authorizedBuyers;  // For private listings
+    // Mapping from token ID to ESIM data
+    mapping(uint256 => ESIMData) public esimData;
+    
+    // Mapping for quantum-secure activation codes
+    mapping(uint256 => bytes32) private _activationCodes;
+    
+    // Carrier bandwidth limits
+    mapping(string => uint256) public carrierBandwidthLimits;
+    
+    // Theme multipliers for rarity
+    mapping(string => uint256) public themeMultipliers;
+
+    // Events
+    event ESIMMinted(
+        uint256 indexed tokenId,
+        address indexed owner,
+        string carrier,
+        uint256 bandwidth
+    );
+    event ESIMActivated(uint256 indexed tokenId, bytes32 quantumProof);
+    event ESIMDeactivated(uint256 indexed tokenId, bytes32 deactivationProof);
+    event BandwidthUpdated(
+        uint256 indexed tokenId,
+        uint256 oldBandwidth,
+        uint256 newBandwidth
+    );
+    event ThemeUpdated(uint256 indexed tokenId, string newTheme);
+    event CarrierUpdated(uint256 indexed tokenId, string newCarrier);
+
+    constructor(
+        address _quantumVerifier,
+        address _benefitsManager
+    ) ERC721("DynamicESIM", "ESIM") {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        
+        quantumVerifier = QuantumVerifier(_quantumVerifier);
+        benefitsManager = ESIMBenefitsManager(_benefitsManager);
+        
+        _initializeThemeMultipliers();
     }
-    
-    mapping(uint256 => ESIM) public esims;
-    mapping(address => uint256[]) public userESIMs;
-    mapping(bytes32 => bool) public usedQuantumSignatures;
-    mapping(uint256 => MarketplaceData) public marketplaceData;
-    
-    uint256 private constant MINIMUM_BANDWIDTH = 1;
-    uint256 private constant MAXIMUM_BANDWIDTH = 1000000; // 1 Gbps
-    uint256 private constant MIN_ACTIVATION_PERIOD = 1 days;
-    uint256 private constant MAX_ACTIVATION_PERIOD = 365 days;
-
-    // Rarity tiers
-    uint256 private constant LEGENDARY_THRESHOLD = 950;
-    uint256 private constant EPIC_THRESHOLD = 850;
-    uint256 private constant RARE_THRESHOLD = 700;
-
-    // Design themes
-    string[] public designThemes = ["cosmic", "quantum", "cyber", "nebula", "matrix"];
-    
-    // Marketplace fee
-    uint256 public marketplaceFee = 25; // 2.5%
-    
-    event ESIMMinted(uint256 indexed tokenId, address indexed owner, uint256 bandwidth, uint256 rarity, string qrHash);
-    event ESIMActivated(uint256 indexed tokenId, uint256 activationTime);
-    event ESIMSuspended(uint256 indexed tokenId);
-    event ESIMBandwidthUpdated(uint256 indexed tokenId, uint256 newBandwidth);
-    event QuantumSignatureVerified(uint256 indexed tokenId, bytes32 signature);
-    event ESIMListed(uint256 indexed tokenId, uint256 price);
-    event ESIMSold(uint256 indexed tokenId, address indexed seller, address indexed buyer, uint256 price);
-    event ESIMPrivateListed(uint256 indexed tokenId, uint256 price, address[] authorizedBuyers);
-    event ESIMPriceUpdated(uint256 indexed tokenId, uint256 oldPrice, uint256 newPrice);
-    event ESIMTransferSecured(uint256 indexed tokenId, bytes32 quantumProof);
-
-    constructor() ERC721("AstraLink Dynamic eSIM", "AESIM") {}
 
     function mintESIM(
         address to,
-        uint256 tokenId,
+        string memory carrier,
         uint256 bandwidth,
-        bytes32 quantumSignature,
-        string memory carrierData,
-        uint256 validityPeriod,
-        string memory qrHash
-    ) external onlyOwner whenNotPaused nonReentrant {
-        require(bandwidth >= MINIMUM_BANDWIDTH && bandwidth <= MAXIMUM_BANDWIDTH, "Invalid bandwidth");
-        require(validityPeriod >= MIN_ACTIVATION_PERIOD && validityPeriod <= MAX_ACTIVATION_PERIOD, "Invalid validity period");
-        require(!usedQuantumSignatures[quantumSignature], "Quantum signature already used");
-
-        // Generate random rarity and theme
-        uint256 rarity = _generateRarity(quantumSignature);
-        string memory theme = designThemes[uint256(keccak256(abi.encodePacked(quantumSignature, block.timestamp))) % designThemes.length];
-
-        _safeMint(to, tokenId);
-        
-        esims[tokenId] = ESIM({
-            id: tokenId,
-            owner: to,
-            bandwidth: bandwidth,
-            activationTime: block.timestamp,
-            expirationTime: block.timestamp + validityPeriod,
-            quantumSignature: quantumSignature,
-            status: "active",
-            carrierData: carrierData,
-            quantumVerified: true,
-            designTheme: theme,
-            rarity: rarity,
-            activationQR: qrHash,
-            isListed: false,
-            price: 0,
-            modelURI: "",
-            arViewerURL: ""
-        });
-
-        // Generate and set token URI with metadata
-        string memory tokenURI = _generateTokenURI(tokenId);
-        _setTokenURI(tokenId, tokenURI);
-
-        userESIMs[to].push(tokenId);
-        usedQuantumSignatures[quantumSignature] = true;
-
-        emit ESIMMinted(tokenId, to, bandwidth, rarity, qrHash);
-        emit QuantumSignatureVerified(tokenId, quantumSignature);
-    }
-
-    function _generateRarity(bytes32 seed) internal view returns (uint256) {
-        return uint256(keccak256(abi.encodePacked(seed, block.timestamp, block.prevrandao))) % 1000 + 1;
-    }
-
-    function _generateTokenURI(uint256 tokenId) internal view returns (string memory) {
-        ESIM memory esim = esims[tokenId];
-        
-        string memory rarityTier;
-        if (esim.rarity >= LEGENDARY_THRESHOLD) rarityTier = "Legendary";
-        else if (esim.rarity >= EPIC_THRESHOLD) rarityTier = "Epic";
-        else if (esim.rarity >= RARE_THRESHOLD) rarityTier = "Rare";
-        else rarityTier = "Common";
-
-        bytes memory dataURI = abi.encodePacked(
-            '{',
-            '"name": "AstraLink eSIM #', tokenId.toString(), '",',
-            '"description": "Dynamic eSIM NFT with quantum security",',
-            '"image": "', _generateImageURI(tokenId), '",',
-            '"animation_url": "', esim.modelURI, '",',
-            '"external_url": "', esim.arViewerURL, '",',
-            '"attributes": [',
-            '{"trait_type": "Bandwidth", "value": "', esim.bandwidth.toString(), ' Mbps"},',
-            '{"trait_type": "Rarity", "value": "', rarityTier, '"},',
-            '{"trait_type": "Design Theme", "value": "', esim.designTheme, '"},',
-            '{"trait_type": "Status", "value": "', esim.status, '"},',
-            '{"trait_type": "Quantum Verified", "value": ', esim.quantumVerified ? "true" : "false", '},',
-            '{"trait_type": "Activation QR", "value": "', esim.activationQR, '"}',
-            ']}'
-        );
-
-        return string(
-            abi.encodePacked(
-                "data:application/json;base64,",
-                Base64.encode(dataURI)
-            )
-        );
-    }
-
-    function _generateImageURI(uint256 tokenId) internal view returns (string memory) {
-        // This would be replaced with actual NFT artwork generation/IPFS hash
-        return string(abi.encodePacked("ipfs://", esims[tokenId].designTheme, "/", tokenId.toString()));
-    }
-
-    // Marketplace functions
-    function listESIM(uint256 tokenId, uint256 price) external {
-        require(ownerOf(tokenId) == msg.sender, "Not the owner");
-        require(price > 0, "Invalid price");
-        
-        esims[tokenId].isListed = true;
-        esims[tokenId].price = price;
-        
-        emit ESIMListed(tokenId, price);
-    }
-
-    function listESIMPrivate(
-        uint256 tokenId,
-        uint256 price,
-        address[] calldata authorizedBuyers
-    ) external {
-        require(ownerOf(tokenId) == msg.sender, "Not the owner");
-        require(price > 0, "Invalid price");
-        require(!marketplaceData[tokenId].isListed, "Already listed");
-        
-        MarketplaceData storage data = marketplaceData[tokenId];
-        data.isListed = true;
-        data.price = price;
-        data.listingTime = block.timestamp;
-        
-        for(uint i = 0; i < authorizedBuyers.length; i++) {
-            data.authorizedBuyers[authorizedBuyers[i]] = true;
-        }
-        
-        emit ESIMPrivateListed(tokenId, price, authorizedBuyers);
-    }
-
-    function updateListingPrice(uint256 tokenId, uint256 newPrice) external {
-        require(ownerOf(tokenId) == msg.sender, "Not the owner");
-        require(marketplaceData[tokenId].isListed, "Not listed");
-        
-        uint256 oldPrice = marketplaceData[tokenId].price;
-        marketplaceData[tokenId].price = newPrice;
-        marketplaceData[tokenId].historicalPrices.push(oldPrice);
-        
-        emit ESIMPriceUpdated(tokenId, oldPrice, newPrice);
-    }
-
-    function buyESIM(uint256 tokenId) external payable nonReentrant {
-        ESIM storage esim = esims[tokenId];
-        require(esim.isListed, "Not listed for sale");
-        require(msg.value >= esim.price, "Insufficient payment");
-        
-        address seller = ownerOf(tokenId);
-        uint256 fee = (msg.value * marketplaceFee) / 1000;
-        uint256 sellerAmount = msg.value - fee;
-        
-        // Transfer NFT
-        _transfer(seller, msg.sender, tokenId);
-        
-        // Update ESIM data
-        esim.owner = msg.sender;
-        esim.isListed = false;
-        esim.price = 0;
-        
-        // Transfer payments
-        payable(seller).transfer(sellerAmount);
-        payable(owner()).transfer(fee);
-        
-        emit ESIMSold(tokenId, seller, msg.sender, msg.value);
-    }
-
-    function buyESIMWithQuantumProof(
-        uint256 tokenId,
+        string memory theme,
+        string memory uri,
         bytes32 quantumProof
-    ) external payable nonReentrant {
-        MarketplaceData storage data = marketplaceData[tokenId];
-        require(data.isListed, "Not listed for sale");
-        require(msg.value >= data.price, "Insufficient payment");
+    ) external onlyRole(MINTER_ROLE) nonReentrant returns (uint256) {
+        require(bandwidth <= carrierBandwidthLimits[carrier], "Bandwidth exceeds limit");
+        require(themeMultipliers[theme] > 0, "Invalid theme");
         
-        if(data.authorizedBuyers[address(0)] == false) {
-            require(data.authorizedBuyers[msg.sender], "Not authorized to buy");
-        }
+        // Increment token ID
+        _tokenIdCounter.increment();
+        uint256 tokenId = _tokenIdCounter.current();
         
-        address seller = ownerOf(tokenId);
-        uint256 fee = (msg.value * marketplaceFee) / 1000;
-        uint256 sellerAmount = msg.value - fee;
+        // Calculate rarity score
+        uint256 rarityScore = _calculateRarityScore(bandwidth, theme);
         
-        // Record transfer history
-        data.previousOwners.push(seller);
-        data.totalTransfers++;
+        // Create ESIM data
+        esimData[tokenId] = ESIMData({
+            carrier: carrier,
+            bandwidth: bandwidth,
+            validUntil: block.timestamp + 365 days,
+            theme: theme,
+            rarityScore: rarityScore,
+            quantumProof: quantumProof,
+            active: false
+        });
         
-        // Transfer NFT with quantum security
-        _transfer(seller, msg.sender, tokenId);
+        // Mint NFT
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
         
-        // Update marketplace data
-        data.isListed = false;
-        data.price = 0;
-        delete data.authorizedBuyers[msg.sender];
-        
-        // Transfer payments
-        payable(seller).transfer(sellerAmount);
-        payable(owner()).transfer(fee);
-        
-        emit ESIMTransferSecured(tokenId, quantumProof);
-        emit ESIMSold(tokenId, seller, msg.sender, msg.value);
-    }
-
-    function getMarketplaceHistory(uint256 tokenId) external view returns (
-        address[] memory previousOwners,
-        uint256[] memory historicalPrices,
-        uint256 totalTransfers
-    ) {
-        MarketplaceData storage data = marketplaceData[tokenId];
-        return (
-            data.previousOwners,
-            data.historicalPrices,
-            data.totalTransfers
+        // Submit quantum proof
+        quantumVerifier.submitProof(
+            tokenId,
+            abi.encodePacked(quantumProof),
+            keccak256(abi.encodePacked(tokenId, carrier, bandwidth)),
+            rarityScore
         );
-    }
-
-    function updateBandwidth(uint256 tokenId, uint256 newBandwidth) external onlyOwner whenNotPaused {
-        require(_exists(tokenId), "eSIM does not exist");
-        require(newBandwidth >= MINIMUM_BANDWIDTH && newBandwidth <= MAXIMUM_BANDWIDTH, "Invalid bandwidth");
         
-        ESIM storage esim = esims[tokenId];
-        require(keccak256(bytes(esim.status)) == keccak256(bytes("active")), "eSIM not active");
-        
-        esim.bandwidth = newBandwidth;
-        emit ESIMBandwidthUpdated(tokenId, newBandwidth);
+        emit ESIMMinted(tokenId, to, carrier, bandwidth);
+        return tokenId;
     }
 
-    function suspendESIM(uint256 tokenId) external onlyOwner whenNotPaused {
-        require(_exists(tokenId), "eSIM does not exist");
-        ESIM storage esim = esims[tokenId];
-        require(keccak256(bytes(esim.status)) == keccak256(bytes("active")), "eSIM not active");
-        
-        esim.status = "suspended";
-        emit ESIMSuspended(tokenId);
-    }
-
-    function reactivateESIM(uint256 tokenId) external onlyOwner whenNotPaused {
-        require(_exists(tokenId), "eSIM does not exist");
-        ESIM storage esim = esims[tokenId];
-        require(keccak256(bytes(esim.status)) == keccak256(bytes("suspended")), "eSIM not suspended");
-        require(block.timestamp < esim.expirationTime, "eSIM expired");
-        
-        esim.status = "active";
-        emit ESIMActivated(tokenId, block.timestamp);
-    }
-
-    function getESIMDetails(uint256 tokenId) external view returns (
-        address owner,
-        uint256 bandwidth,
-        uint256 activationTime,
-        uint256 expirationTime,
-        string memory status,
-        bool quantumVerified
-    ) {
-        require(_exists(tokenId), "eSIM does not exist");
-        ESIM memory esim = esims[tokenId];
-        return (
-            esim.owner,
-            esim.bandwidth,
-            esim.activationTime,
-            esim.expirationTime,
-            esim.status,
-            esim.quantumVerified
-        );
-    }
-
-    function getUserESIMs(address user) external view returns (uint256[] memory) {
-        return userESIMs[user];
-    }
-
-    function updateVisualization(
+    function activateESIM(
         uint256 tokenId,
-        string memory modelURI,
-        string memory arViewerURL
-    ) external onlyOwner whenNotPaused {
-        require(_exists(tokenId), "eSIM does not exist");
+        bytes32 activationCode,
+        bytes32 quantumProof
+    ) external nonReentrant {
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "Not approved");
+        require(!esimData[tokenId].active, "Already activated");
+        require(block.timestamp <= esimData[tokenId].validUntil, "ESIM expired");
+        require(
+            _verifyActivationCode(tokenId, activationCode),
+            "Invalid activation code"
+        );
         
-        ESIM storage esim = esims[tokenId];
-        esim.modelURI = modelURI;
-        esim.arViewerURL = arViewerURL;
+        // Verify quantum proof
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
         
-        // Update token URI to reflect new visualization data
-        _setTokenURI(tokenId, _generateTokenURI(tokenId));
+        ESIMData storage esim = esimData[tokenId];
+        esim.active = true;
+        esim.quantumProof = quantumProof;
+        
+        // Initialize benefits
+        _initializeTokenBenefits(tokenId);
+        
+        emit ESIMActivated(tokenId, quantumProof);
     }
 
-    // Add new function to get visualization data
-    function getVisualization(uint256 tokenId) external view returns (
-        string memory modelURI,
-        string memory arViewerURL
-    ) {
-        require(_exists(tokenId), "eSIM does not exist");
-        ESIM memory esim = esims[tokenId];
-        return (esim.modelURI, esim.arViewerURL);
+    function deactivateESIM(
+        uint256 tokenId,
+        bytes32 deactivationProof
+    ) external nonReentrant {
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "Not approved");
+        require(esimData[tokenId].active, "Not activated");
+        
+        // Verify quantum proof
+        require(
+            _verifyQuantumProof(tokenId, deactivationProof),
+            "Invalid deactivation proof"
+        );
+        
+        ESIMData storage esim = esimData[tokenId];
+        esim.active = false;
+        esim.quantumProof = deactivationProof;
+        
+        emit ESIMDeactivated(tokenId, deactivationProof);
     }
 
-    function pauseOperations() external onlyOwner {
-        _pause();
+    function updateBandwidth(
+        uint256 tokenId,
+        uint256 newBandwidth,
+        bytes32 quantumProof
+    ) external onlyRole(QUANTUM_OPERATOR_ROLE) nonReentrant {
+        require(_exists(tokenId), "Token does not exist");
+        require(
+            newBandwidth <= carrierBandwidthLimits[esimData[tokenId].carrier],
+            "Bandwidth exceeds limit"
+        );
+        
+        // Verify quantum proof
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
+        
+        uint256 oldBandwidth = esimData[tokenId].bandwidth;
+        esimData[tokenId].bandwidth = newBandwidth;
+        
+        // Update rarity score
+        esimData[tokenId].rarityScore = _calculateRarityScore(
+            newBandwidth,
+            esimData[tokenId].theme
+        );
+        
+        emit BandwidthUpdated(tokenId, oldBandwidth, newBandwidth);
     }
 
-    function unpauseOperations() external onlyOwner {
-        _unpause();
+    function updateTheme(
+        uint256 tokenId,
+        string memory newTheme,
+        bytes32 quantumProof
+    ) external nonReentrant {
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "Not approved");
+        require(themeMultipliers[newTheme] > 0, "Invalid theme");
+        
+        // Verify quantum proof
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
+        
+        esimData[tokenId].theme = newTheme;
+        
+        // Update rarity score
+        esimData[tokenId].rarityScore = _calculateRarityScore(
+            esimData[tokenId].bandwidth,
+            newTheme
+        );
+        
+        emit ThemeUpdated(tokenId, newTheme);
+    }
+
+    function setActivationCode(
+        uint256 tokenId,
+        bytes32 activationCode,
+        bytes32 quantumProof
+    ) external onlyRole(QUANTUM_OPERATOR_ROLE) {
+        require(_exists(tokenId), "Token does not exist");
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
+        
+        _activationCodes[tokenId] = activationCode;
+    }
+
+    function setCarrierBandwidthLimit(
+        string memory carrier,
+        uint256 limit
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        carrierBandwidthLimits[carrier] = limit;
+    }
+
+    function getESIMData(
+        uint256 tokenId
+    ) external view returns (ESIMData memory) {
+        require(_exists(tokenId), "Token does not exist");
+        return esimData[tokenId];
+    }
+
+    function isActive(uint256 tokenId) external view returns (bool) {
+        require(_exists(tokenId), "Token does not exist");
+        return esimData[tokenId].active;
+    }
+
+    function _initializeThemeMultipliers() private {
+        themeMultipliers["quantum"] = 500;  // 5x multiplier
+        themeMultipliers["cosmic"] = 300;   // 3x multiplier
+        themeMultipliers["cyber"] = 200;    // 2x multiplier
+        themeMultipliers["matrix"] = 250;   // 2.5x multiplier
+        themeMultipliers["nebula"] = 400;   // 4x multiplier
+    }
+
+    function _calculateRarityScore(
+        uint256 bandwidth,
+        string memory theme
+    ) private view returns (uint256) {
+        uint256 baseScore = (bandwidth * 100) / carrierBandwidthLimits[esimData[tokenId].carrier];
+        return (baseScore * themeMultipliers[theme]) / 100;
+    }
+
+    function _verifyQuantumProof(
+        uint256 tokenId,
+        bytes32 proofId
+    ) private view returns (bool) {
+        (,,,,bool isVerified,) = quantumVerifier.getProof(tokenId);
+        return isVerified;
+    }
+
+    function _verifyActivationCode(
+        uint256 tokenId,
+        bytes32 activationCode
+    ) private view returns (bool) {
+        return _activationCodes[tokenId] == activationCode;
+    }
+
+    function _initializeTokenBenefits(uint256 tokenId) private {
+        string memory tier = _determineBenefitTier(esimData[tokenId].rarityScore);
+        benefitsManager.updateTokenBenefits(
+            tokenId,
+            tier,
+            100, // Initial performance score
+            esimData[tokenId].quantumProof
+        );
+    }
+
+    function _determineBenefitTier(
+        uint256 rarityScore
+    ) private pure returns (string memory) {
+        if (rarityScore >= 950) return "quantum";
+        if (rarityScore >= 850) return "cosmic";
+        return "cyber";
     }
 
     function _beforeTokenTransfer(
@@ -374,24 +319,25 @@ contract EnhancedDynamicESIMNFT is ERC721URIStorage, ERC721Enumerable, Ownable, 
         address to,
         uint256 tokenId,
         uint256 batchSize
-    ) internal override(ERC721, ERC721Enumerable) whenNotPaused {
+    ) internal override(ERC721, ERC721Enumerable) {
         super._beforeTokenTransfer(from, to, tokenId, batchSize);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC721, ERC721Enumerable, ERC721URIStorage)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
-    }
-
-    function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+    function _burn(
+        uint256 tokenId
+    ) internal override(ERC721, ERC721URIStorage) {
         super._burn(tokenId);
     }
 
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+    function tokenURI(
+        uint256 tokenId
+    ) public view override(ERC721, ERC721URIStorage) returns (string memory) {
         return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC721, ERC721Enumerable, AccessControl) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }

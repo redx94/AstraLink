@@ -1,216 +1,320 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "./EnhancedDynamicESIMNFT.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "./QuantumVerifier.sol";
 
-contract ESIMBenefitsManager is Ownable {
-    EnhancedDynamicESIMNFT public esimNFT;
+/**
+ * @title ESIMBenefitsManager
+ * @dev Manages benefits and features for eSIM NFTs with quantum security
+ */
+contract ESIMBenefitsManager is AccessControl, ReentrancyGuard, Pausable {
+    using Counters for Counters.Counter;
+
+    bytes32 public constant BENEFIT_MANAGER_ROLE = keccak256("BENEFIT_MANAGER_ROLE");
+    bytes32 public constant QUANTUM_OPERATOR_ROLE = keccak256("QUANTUM_OPERATOR_ROLE");
+
+    struct BenefitTier {
+        string name;
+        uint256 speedMultiplier;
+        bool priorityRouting;
+        bool dataRollover;
+        bool peakHourPriority;
+        bool quantumEncryption;
+        uint256 bonusPointMultiplier;
+        uint256 minRarityScore;
+    }
+
+    struct TokenBenefits {
+        string currentTier;
+        uint256 bonusPoints;
+        uint256 performanceScore;
+        uint256 lastUpdate;
+        mapping(string => bool) activeFeatures;
+        NetworkMetrics metrics;
+    }
+
+    struct NetworkMetrics {
+        uint256 latency;
+        uint256 reliability;
+        uint256 congestionIndex;
+        uint256 qosLevel;
+        uint256 adaptabilityScore;
+    }
+
+    // Reference to QuantumVerifier contract
+    QuantumVerifier public quantumVerifier;
+
+    // Mapping of tier names to benefit tiers
+    mapping(string => BenefitTier) public benefitTiers;
     
-    // Benefit multipliers based on rarity (in basis points, 100 = 1%)
-    uint256 private constant LEGENDARY_MULTIPLIER = 500;  // 5x
-    uint256 private constant EPIC_MULTIPLIER = 300;      // 3x
-    uint256 private constant RARE_MULTIPLIER = 200;      // 2x
-    uint256 private constant COMMON_MULTIPLIER = 100;    // 1x
-
-    // Theme-specific benefits
-    struct ThemeBenefits {
-        bool priorityRouting;      // Better network routing
-        bool dataRollover;        // Unused data rolls over
-        bool peakHourPriority;    // Priority during peak hours
-        uint256 speedBoost;       // Speed boost in percentage
-        bool quantumEncryption;   // Access to quantum encryption
-    }
-
-    struct QuantumBonus {
-        uint256 encryptionStrength;    // Quantum encryption strength bonus (1-100)
-        uint256 routingPriority;       // Priority in quantum-secured routes
-        bool quantumResistance;        // Access to quantum-resistant features
-        uint256 bandwidthMultiplier;   // Additional bandwidth multiplier
-    }
+    // Mapping from token ID to benefits
+    mapping(uint256 => TokenBenefits) public tokenBenefits;
     
-    mapping(string => ThemeBenefits) public themeBenefits;
-    mapping(uint256 => uint256) public tokenBonusPoints;
-    mapping(uint256 => QuantumBonus) public quantumBonuses;
+    // Performance thresholds
+    uint256 public minPerformanceScore = 50;
+    uint256 public maxPerformanceScore = 100;
+    uint256 public bonusPointThreshold = 1000;
 
-    event BenefitsUpdated(uint256 indexed tokenId, uint256 multiplier);
-    event ThemeBenefitsConfigured(string theme);
-    event BonusPointsEarned(uint256 indexed tokenId, uint256 points);
-    event QuantumBonusUpdated(uint256 indexed tokenId, uint256 encryptionStrength, uint256 routingPriority);
+    // Events
+    event BenefitTierCreated(string name, uint256 minRarityScore);
+    event BenefitTierUpdated(string name, uint256 newMinRarityScore);
+    event TokenBenefitsUpdated(uint256 indexed tokenId, string tier, uint256 performanceScore);
+    event BonusPointsEarned(uint256 indexed tokenId, uint256 points, uint256 multiplier);
+    event NetworkMetricsUpdated(uint256 indexed tokenId, uint256 latency, uint256 reliability);
+    event FeatureActivated(uint256 indexed tokenId, string feature);
+    event FeatureDeactivated(uint256 indexed tokenId, string feature);
 
-    constructor(address _esimNFTAddress) {
-        esimNFT = EnhancedDynamicESIMNFT(_esimNFTAddress);
-        _initializeThemeBenefits();
+    constructor(address _quantumVerifier) {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(BENEFIT_MANAGER_ROLE, msg.sender);
+        quantumVerifier = QuantumVerifier(_quantumVerifier);
+        
+        // Initialize default benefit tiers
+        _initializeDefaultTiers();
     }
 
-    function _initializeThemeBenefits() private {
-        // Quantum theme benefits
-        themeBenefits["quantum"] = ThemeBenefits({
-            priorityRouting: true,
-            dataRollover: true,
-            peakHourPriority: true,
-            speedBoost: 50,        // 50% speed boost
-            quantumEncryption: true
-        });
-
-        // Cosmic theme benefits
-        themeBenefits["cosmic"] = ThemeBenefits({
-            priorityRouting: true,
-            dataRollover: true,
-            peakHourPriority: false,
-            speedBoost: 30,        // 30% speed boost
-            quantumEncryption: false
-        });
-
-        // Cyber theme benefits
-        themeBenefits["cyber"] = ThemeBenefits({
-            priorityRouting: true,
-            dataRollover: false,
-            peakHourPriority: true,
-            speedBoost: 40,        // 40% speed boost
-            quantumEncryption: false
-        });
-
-        // Other themes...
-        themeBenefits["nebula"] = ThemeBenefits({
-            priorityRouting: false,
-            dataRollover: true,
-            peakHourPriority: false,
-            speedBoost: 20,        // 20% speed boost
-            quantumEncryption: false
-        });
-
-        themeBenefits["matrix"] = ThemeBenefits({
-            priorityRouting: true,
-            dataRollover: false,
-            peakHourPriority: false,
-            speedBoost: 25,        // 25% speed boost
-            quantumEncryption: true
-        });
-    }
-
-    function calculateBenefits(uint256 tokenId) public view returns (
+    function createBenefitTier(
+        string memory name,
         uint256 speedMultiplier,
-        bool hasPriorityRouting,
-        bool hasDataRollover,
-        bool hasPeakHourPriority,
-        bool hasQuantumEncryption,
-        uint256 bonusPoints
-    ) {
-        EnhancedDynamicESIMNFT.ESIM memory esim = esimNFT.esims(tokenId);
-        require(esim.id == tokenId, "eSIM not found");
-
-        // Get theme benefits
-        ThemeBenefits memory themeBenefit = themeBenefits[esim.designTheme];
-        
-        // Calculate rarity multiplier
-        uint256 rarityMultiplier;
-        if (esim.rarity >= 950) rarityMultiplier = LEGENDARY_MULTIPLIER;
-        else if (esim.rarity >= 850) rarityMultiplier = EPIC_MULTIPLIER;
-        else if (esim.rarity >= 700) rarityMultiplier = RARE_MULTIPLIER;
-        else rarityMultiplier = COMMON_MULTIPLIER;
-
-        // Apply rarity multiplier to speed boost
-        speedMultiplier = (themeBenefit.speedBoost * rarityMultiplier) / 100;
-
-        return (
-            speedMultiplier,
-            themeBenefit.priorityRouting,
-            themeBenefit.dataRollover,
-            themeBenefit.peakHourPriority,
-            themeBenefit.quantumEncryption,
-            tokenBonusPoints[tokenId]
-        );
-    }
-
-    function calculateQuantumBenefits(uint256 tokenId) public view returns (
-        uint256 totalSpeedMultiplier,
-        uint256 encryptionLevel,
-        uint256 routingPriority,
-        bool hasQuantumResistance
-    ) {
-        EnhancedDynamicESIMNFT.ESIM memory esim = esimNFT.esims(tokenId);
-        ThemeBenefits memory themeBenefit = themeBenefits[esim.designTheme];
-        QuantumBonus memory qBonus = quantumBonuses[tokenId];
-        
-        // Calculate base multiplier from theme and rarity
-        uint256 baseMultiplier = _calculateBaseMultiplier(esim.rarity, themeBenefit.speedBoost);
-        
-        // Apply quantum bonuses
-        totalSpeedMultiplier = baseMultiplier + qBonus.bandwidthMultiplier;
-        encryptionLevel = qBonus.encryptionStrength;
-        routingPriority = qBonus.routingPriority;
-        hasQuantumResistance = qBonus.quantumResistance;
-    }
-
-    function earnBonusPoints(uint256 tokenId, uint256 dataUsed) external onlyOwner {
-        EnhancedDynamicESIMNFT.ESIM memory esim = esimNFT.esims(tokenId);
-        require(esim.id == tokenId, "eSIM not found");
-
-        // Calculate points based on data usage and rarity
-        uint256 points = (dataUsed * esim.rarity) / 1000;
-        tokenBonusPoints[tokenId] += points;
-
-        emit BonusPointsEarned(tokenId, points);
-    }
-
-    function updateThemeBenefits(
-        string memory theme,
         bool priorityRouting,
         bool dataRollover,
         bool peakHourPriority,
-        uint256 speedBoost,
-        bool quantumEncryption
-    ) external onlyOwner {
-        themeBenefits[theme] = ThemeBenefits({
+        bool quantumEncryption,
+        uint256 bonusPointMultiplier,
+        uint256 minRarityScore
+    ) external onlyRole(BENEFIT_MANAGER_ROLE) {
+        require(benefitTiers[name].minRarityScore == 0, "Tier already exists");
+        
+        benefitTiers[name] = BenefitTier({
+            name: name,
+            speedMultiplier: speedMultiplier,
             priorityRouting: priorityRouting,
             dataRollover: dataRollover,
             peakHourPriority: peakHourPriority,
-            speedBoost: speedBoost,
-            quantumEncryption: quantumEncryption
+            quantumEncryption: quantumEncryption,
+            bonusPointMultiplier: bonusPointMultiplier,
+            minRarityScore: minRarityScore
         });
-
-        emit ThemeBenefitsConfigured(theme);
+        
+        emit BenefitTierCreated(name, minRarityScore);
     }
 
-    function updateQuantumBonus(
+    function updateTokenBenefits(
         uint256 tokenId,
-        uint256 encryptionStrength,
-        uint256 routingPriority,
-        bool quantumResistance,
-        uint256 bandwidthMultiplier
-    ) external onlyOwner {
-        require(encryptionStrength <= 100, "Invalid encryption strength");
-        require(routingPriority <= 100, "Invalid routing priority");
+        string memory tier,
+        uint256 performanceScore,
+        bytes32 quantumProof
+    ) external onlyRole(QUANTUM_OPERATOR_ROLE) whenNotPaused nonReentrant {
+        require(benefitTiers[tier].minRarityScore > 0, "Invalid tier");
+        require(
+            performanceScore >= minPerformanceScore && 
+            performanceScore <= maxPerformanceScore,
+            "Invalid performance score"
+        );
         
-        quantumBonuses[tokenId] = QuantumBonus({
-            encryptionStrength: encryptionStrength,
-            routingPriority: routingPriority,
-            quantumResistance: quantumResistance,
-            bandwidthMultiplier: bandwidthMultiplier
+        // Verify quantum proof
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
+        
+        TokenBenefits storage benefits = tokenBenefits[tokenId];
+        benefits.currentTier = tier;
+        benefits.performanceScore = performanceScore;
+        benefits.lastUpdate = block.timestamp;
+        
+        emit TokenBenefitsUpdated(tokenId, tier, performanceScore);
+    }
+
+    function earnBonusPoints(
+        uint256 tokenId,
+        uint256 dataUsed,
+        bytes32 quantumProof
+    ) external onlyRole(QUANTUM_OPERATOR_ROLE) whenNotPaused nonReentrant {
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
+        
+        TokenBenefits storage benefits = tokenBenefits[tokenId];
+        BenefitTier memory tier = benefitTiers[benefits.currentTier];
+        
+        // Calculate bonus points based on data usage and performance
+        uint256 basePoints = (dataUsed * tier.bonusPointMultiplier) / 1000;
+        uint256 performanceBonus = (basePoints * benefits.performanceScore) / 100;
+        uint256 totalPoints = basePoints + performanceBonus;
+        
+        benefits.bonusPoints += totalPoints;
+        
+        emit BonusPointsEarned(tokenId, totalPoints, tier.bonusPointMultiplier);
+    }
+
+    function updateNetworkMetrics(
+        uint256 tokenId,
+        uint256 latency,
+        uint256 reliability,
+        uint256 congestionIndex,
+        uint256 qosLevel,
+        bytes32 quantumProof
+    ) external onlyRole(QUANTUM_OPERATOR_ROLE) whenNotPaused nonReentrant {
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
+        
+        TokenBenefits storage benefits = tokenBenefits[tokenId];
+        
+        benefits.metrics = NetworkMetrics({
+            latency: latency,
+            reliability: reliability,
+            congestionIndex: congestionIndex,
+            qosLevel: qosLevel,
+            adaptabilityScore: _calculateAdaptabilityScore(latency, reliability, congestionIndex)
         });
         
-        emit QuantumBonusUpdated(tokenId, encryptionStrength, routingPriority);
-    }
-
-    function redeemBonusPoints(uint256 tokenId, uint256 points) external {
-        EnhancedDynamicESIMNFT.ESIM memory esim = esimNFT.esims(tokenId);
-        require(esim.owner == msg.sender, "Not the token owner");
-        require(tokenBonusPoints[tokenId] >= points, "Insufficient points");
-
-        tokenBonusPoints[tokenId] -= points;
-        // Implementation of rewards redemption would go here
-        // Could include: extra data, temporary speed boosts, etc.
-    }
-
-    function _calculateBaseMultiplier(uint256 rarity, uint256 themeBoost) internal pure returns (uint256) {
-        // Rarity tiers: Legendary (950-1000), Epic (850-949), Rare (700-849), Common (1-699)
-        uint256 rarityMultiplier;
-        if (rarity >= 950) rarityMultiplier = LEGENDARY_MULTIPLIER;      // 5x
-        else if (rarity >= 850) rarityMultiplier = EPIC_MULTIPLIER;      // 3x
-        else if (rarity >= 700) rarityMultiplier = RARE_MULTIPLIER;      // 2x
-        else rarityMultiplier = COMMON_MULTIPLIER;                       // 1x
+        // Update performance score based on metrics
+        benefits.performanceScore = _calculatePerformanceScore(benefits.metrics);
         
-        return (themeBoost * rarityMultiplier) / 100;
+        emit NetworkMetricsUpdated(tokenId, latency, reliability);
+    }
+
+    function activateFeature(
+        uint256 tokenId,
+        string memory feature,
+        bytes32 quantumProof
+    ) external onlyRole(QUANTUM_OPERATOR_ROLE) whenNotPaused nonReentrant {
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
+        
+        TokenBenefits storage benefits = tokenBenefits[tokenId];
+        benefits.activeFeatures[feature] = true;
+        
+        emit FeatureActivated(tokenId, feature);
+    }
+
+    function deactivateFeature(
+        uint256 tokenId,
+        string memory feature,
+        bytes32 quantumProof
+    ) external onlyRole(QUANTUM_OPERATOR_ROLE) whenNotPaused nonReentrant {
+        require(
+            _verifyQuantumProof(tokenId, quantumProof),
+            "Invalid quantum proof"
+        );
+        
+        TokenBenefits storage benefits = tokenBenefits[tokenId];
+        benefits.activeFeatures[feature] = false;
+        
+        emit FeatureDeactivated(tokenId, feature);
+    }
+
+    function getTokenBenefits(
+        uint256 tokenId
+    ) external view returns (
+        string memory tier,
+        uint256 bonusPoints,
+        uint256 performanceScore,
+        uint256 lastUpdate,
+        NetworkMetrics memory metrics
+    ) {
+        TokenBenefits storage benefits = tokenBenefits[tokenId];
+        return (
+            benefits.currentTier,
+            benefits.bonusPoints,
+            benefits.performanceScore,
+            benefits.lastUpdate,
+            benefits.metrics
+        );
+    }
+
+    function isFeatureActive(
+        uint256 tokenId,
+        string memory feature
+    ) external view returns (bool) {
+        return tokenBenefits[tokenId].activeFeatures[feature];
+    }
+
+    function _initializeDefaultTiers() private {
+        // Quantum tier
+        createBenefitTier(
+            "quantum",
+            50,  // 50% speed boost
+            true,
+            true,
+            true,
+            true,
+            5,    // 5x bonus points
+            950   // 95th percentile rarity
+        );
+
+        // Cosmic tier
+        createBenefitTier(
+            "cosmic",
+            30,  // 30% speed boost
+            true,
+            true,
+            false,
+            false,
+            3,    // 3x bonus points
+            850   // 85th percentile rarity
+        );
+
+        // Cyber tier
+        createBenefitTier(
+            "cyber",
+            20,  // 20% speed boost
+            true,
+            false,
+            false,
+            false,
+            2,    // 2x bonus points
+            700   // 70th percentile rarity
+        );
+    }
+
+    function _verifyQuantumProof(
+        uint256 tokenId,
+        bytes32 proofId
+    ) private view returns (bool) {
+        (,,,,bool isVerified,) = quantumVerifier.getProof(tokenId);
+        return isVerified;
+    }
+
+    function _calculateAdaptabilityScore(
+        uint256 latency,
+        uint256 reliability,
+        uint256 congestionIndex
+    ) private pure returns (uint256) {
+        uint256 latencyScore = latency <= 100 ? 100 - latency : 0;
+        uint256 reliabilityScore = reliability;
+        uint256 congestionScore = congestionIndex <= 50 ? 100 - (congestionIndex * 2) : 0;
+        
+        return (latencyScore + reliabilityScore + congestionScore) / 3;
+    }
+
+    function _calculatePerformanceScore(
+        NetworkMetrics memory metrics
+    ) private pure returns (uint256) {
+        uint256 baseScore = (
+            metrics.reliability * 40 +
+            (100 - metrics.latency) * 30 +
+            (100 - metrics.congestionIndex) * 30
+        ) / 100;
+        
+        return baseScore;
+    }
+
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
     }
 }

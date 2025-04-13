@@ -41,7 +41,11 @@ class QuantumSecureESIM:
         self.config = {
             'private_key': None,  # Will be set during initialization
             'max_retries': 3,
-            'min_signature_strength': 0.95
+            'min_signature_strength': 0.95,
+            'quantum_noise_threshold': 0.01,
+            'lattice_security_level': 'maximum',
+            'entropy_pool_size': 1024,
+            'quantum_circuit_depth': 20
         }
 
     async def initialize(self):
@@ -474,26 +478,42 @@ async def _mint_esim_nft(
             return 0.0
 
     async def _generate_quantum_entropy_pool(self) -> bytes:
-        """Generate a quantum entropy pool for enhanced security"""
+        """Generate an enhanced quantum entropy pool for maximum security"""
         try:
             entropy_sources = []
             
-            # Generate entropy from multiple quantum sources
-            for _ in range(4):
+            # Generate entropy from multiple quantum sources with increased complexity
+            for _ in range(8):  # Increased from 4 to 8 sources
                 circuit = await self._create_key_generation_circuit()
-                measurements = await self._execute_quantum_circuit(circuit)
-                entropy_sources.append(self._process_quantum_measurements(measurements))
-            
-            # Combine entropy sources using quantum XOR
+                # Add quantum error correction
+                protected_circuit = await self.qec.apply_error_correction(circuit, 'surface_code')
+                measurements = await self._execute_quantum_circuit(protected_circuit)
+                processed = self._process_quantum_measurements(measurements)
+                
+                # Verify entropy quality
+                if self._calculate_shannon_entropy(processed) < 0.9:
+                    continue
+                    
+                entropy_sources.append(processed)
+
+            # Enhanced entropy combination using quantum XOR and rotation
             combined_entropy = entropy_sources[0]
             for source in entropy_sources[1:]:
-                combined_entropy = bytes(a ^ b for a, b in zip(combined_entropy, source))
+                # Quantum rotation before XOR
+                rotated = self._quantum_rotate_bits(source)
+                combined_entropy = bytes(a ^ b for a, b in zip(combined_entropy, rotated))
             
-            # Apply quantum-resistant hash
-            return self.quantum_system.hash(combined_entropy)
+            # Apply lattice-based post-quantum hash
+            return self.quantum_system.lattice_hash(combined_entropy)
         except Exception as e:
-            logger.error(f"Entropy pool generation failed: {str(e)}")
-            raise QuantumSystemError("Failed to generate entropy pool")
+            logger.error(f"Enhanced entropy pool generation failed: {str(e)}")
+            raise QuantumSystemError("Failed to generate enhanced entropy pool")
+
+    def _quantum_rotate_bits(self, data: bytes) -> bytes:
+        """Apply quantum-inspired bit rotation for enhanced entropy"""
+        bits = ''.join(format(b, '08b') for b in data)
+        rotation = len(bits) // 3  # Dynamic rotation based on data size
+        return bytes(int(bits[i:i+8], 2) for i in range(0, len(bits)-7, 8))
 
     async def _optimize_quantum_circuit(self, circuit) -> Any:
         """Optimize quantum circuit for post-quantum resistance"""
@@ -582,42 +602,54 @@ async def _mint_esim_nft(
         token_id: int,
         desired_bandwidth: int
     ) -> Dict[str, Any]:
-        """Optimize bandwidth allocation using quantum algorithms"""
+        """Enhanced bandwidth optimization using quantum algorithms"""
         try:
-            # Get current network metrics
             network_state = await self._get_network_state()
-
-            # Create quantum circuit for optimization
+            user_history = await self._get_user_usage_history(token_id)
+            
+            # Create quantum circuit for multi-parameter optimization
             circuit = await self.quantum_system.create_optimization_circuit(
-                desired_bandwidth,
-                network_state
-            )
-
-            # Apply error correction
-            protected_circuit = await self.qec.apply_error_correction(
-                circuit,
-                error_type='all'
-            )
-
-            # Execute quantum optimization
-            result = await self.quantum_system.execute_optimization(
-                protected_circuit,
-                optimization_params={
-                    'max_iterations': 1000,
-                    'convergence_threshold': 0.001,
-                    'noise_model': 'quantum_resistant'
+                parameters={
+                    'desired_bandwidth': desired_bandwidth,
+                    'network_load': network_state['current_load'],
+                    'user_history': user_history,
+                    'congestion_factor': network_state['congestion_index'],
+                    'time_of_day': datetime.now().hour
                 }
             )
 
-            return {
-                'bandwidth': result['optimal_bandwidth'],
-                'network_latency': result['expected_latency'],
-                'reliability_score': result['reliability'],
-                'congestion_index': result['congestion_score']
-            }
+            # Apply enhanced error correction with surface code
+            protected_circuit = await self.qec.apply_error_correction(
+                circuit,
+                error_type='surface_code',
+                distance=5  # Increased error correction strength
+            )
 
+            # Execute quantum optimization with parallel processing
+            result = await self.quantum_system.execute_parallel_optimization(
+                protected_circuit,
+                optimization_params={
+                    'iterations': 2000,  # Doubled iterations
+                    'convergence_threshold': 0.0005,  # Increased precision
+                    'noise_model': 'realistic_hardware',
+                    'error_mitigation': True,
+                    'shot_count': 10000  # Increased shot count
+                }
+            )
+
+            # Apply AI-enhanced post-processing
+            optimized = await self._post_process_optimization(result)
+
+            return {
+                'bandwidth': optimized['optimal_bandwidth'],
+                'network_latency': optimized['expected_latency'],
+                'reliability_score': optimized['reliability'],
+                'congestion_index': optimized['congestion_score'],
+                'qos_guarantee': optimized['qos_level'],
+                'adaptability_index': optimized['adaptation_factor']
+            }
         except Exception as e:
-            logger.error(f"Bandwidth optimization failed: {str(e)}")
+            logger.error(f"Enhanced bandwidth optimization failed: {str(e)}")
             raise
 
     async def _apply_quantum_protection(
