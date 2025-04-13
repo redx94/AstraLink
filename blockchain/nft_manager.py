@@ -17,6 +17,7 @@ import json
 from logging_config import get_logger
 logger = get_logger(__name__)
 from exceptions import NFTError
+from network.handshake_integration import HandshakeIntegration
 
 class NFTManager:
     def __init__(self, contract_address: str, web3_provider: str):
@@ -29,6 +30,7 @@ class NFTManager:
             address=contract_address,
             abi=self.contract_abi
         )
+        self.handshake = HandshakeIntegration()
 
     def load_network_config(self):
         try:
@@ -41,6 +43,10 @@ class NFTManager:
 
     async def mint_esim_nft(self, user_address: str, esim_data: Dict, qrHash: str) -> Dict:
         try:
+            # Verify domain ownership through Handshake DNS
+            if not await self.handshake.verify_domain_ownership():
+                raise NFTError("Domain ownership verification failed")
+
             # Prepare NFT metadata
             metadata = {
                 'esim_id': esim_data['iccid'],

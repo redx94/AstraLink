@@ -152,6 +152,19 @@ async def verify_client_access(client_host: str) -> bool:
         logger.error(f"Client verification failed: {str(e)}")
         return False
 
+async def update_dns_records(records: list) -> bool:
+    """Update DNS records with NFT eSIM data"""
+    try:
+        success = await handshake.update_dns_records(records)
+        if not success:
+            logger.error("Failed to update DNS records")
+            return False
+        logger.info("DNS records updated successfully")
+        return True
+    except Exception as e:
+        logger.error(f"DNS record update failed: {str(e)}")
+        return False
+
 async def startup():
     """Initialize API services"""
     try:

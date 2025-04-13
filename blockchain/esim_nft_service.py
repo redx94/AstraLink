@@ -19,6 +19,7 @@ import random
 from pathlib import Path
 import yaml
 from logging_config import get_logger
+from network.handshake_integration import HandshakeIntegration
 
 logger = get_logger(__name__)
 
@@ -32,6 +33,7 @@ class ESIMNFTService:
             "nebula": [(255, 192, 203), (147, 112, 219), (0, 191, 255)], # Nebula pastels
             "matrix": [(0, 255, 0), (0, 200, 0), (0, 150, 0)]         # Matrix greens
         }
+        self.handshake = HandshakeIntegration()
 
     async def generate_activation_qr(self, esim_data: Dict[str, Any]) -> Tuple[str, bytes]:
         """Generate QR code for eSIM activation and upload to IPFS"""
@@ -69,6 +71,9 @@ class ESIMNFTService:
             
             # Upload to IPFS
             ipfs_hash = await self.ipfs_client.add(img_bytes)
+            
+            # Update DNS records with QR code IPFS hash
+            await self.handshake.update_nft_esim_dns_records(esim_data["token_id"], ipfs_hash)
             
             return ipfs_hash, img_bytes
 

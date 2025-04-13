@@ -266,5 +266,20 @@ class HandshakeIntegration:
             logger.error(f"DNSSEC verification failed: {e}")
             return False
 
+    async def update_nft_esim_dns_records(self, token_id: int, ipfs_hash: str) -> bool:
+        """Update DNS records with NFT eSIM data"""
+        try:
+            records = [
+                {
+                    'type': 'TXT',
+                    'name': f"esim-{token_id}",
+                    'value': f"ipfs://{ipfs_hash}"
+                }
+            ]
+            return await self.update_dns_records(records)
+        except Exception as e:
+            logger.error(f"Failed to update NFT eSIM DNS records: {str(e)}")
+            return False
+
 # Global Handshake integration instance
 handshake_integration = HandshakeIntegration()
