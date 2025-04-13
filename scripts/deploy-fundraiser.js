@@ -27,3 +27,8 @@ async function main() {
 
   console.log("\nContract is ready to accept contributions!");
 }
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

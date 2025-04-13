@@ -91,3 +91,7 @@ class MetricsCollector:
     def clear_metrics(self):
         """Clear all recorded metrics"""
         self.metrics = {}
+
+def get_logger(name: str) -> StructuredLogger:
+    """Get a structured logger instance"""
+    return StructuredLogger(name)
