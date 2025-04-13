@@ -4,13 +4,13 @@ from ai.task_handler import TaskHandler
 from sklearn.ensemble import IsolationForest
 
 class ThreatDetectionTaskHandler(TaskHandler):
-    def __init__(self, log_analyzer):
+    def __init__(self, log_analyzer, log_file="network_logs_analysis.json"):
         self.log_analyzer = log_analyzer
         self.model = IsolationForest(n_estimators=100, contamination=0.1)
+        self.log_file = log_file
 
     def execute_task(self, task):
-        log_file = "network_logs_analysis.json" # TODO: Make this configurable
-        threats = self.detect_threats_from_logs(log_file)
+        threats = self.detect_threats_from_logs(self.log_file)
         return self.trigger_alert(threats)
 
     def detect_threats_from_logs(self, log_file):
