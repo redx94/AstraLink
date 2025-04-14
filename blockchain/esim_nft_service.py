@@ -30,6 +30,7 @@ class ESIMNFTService:
         self.network_monitor = NetworkMetricsMonitor()
         self.ai_optimizer = AIBandwidthOptimizer()
         self.quantum_verifier = QuantumVerifier()
+        self.zk_proof_generator = ZKProofGenerator()
         self.theme_colors = {
             "cosmic": [(25, 25, 112), (138, 43, 226), (75, 0, 130)],  # Deep space blues and purples
             "quantum": [(0, 255, 255), (255, 0, 255), (0, 255, 0)],   # Bright quantum colors
@@ -58,6 +59,7 @@ class ESIMNFTService:
                 "tokenId": esim_data["token_id"],
                 "bandwidth": esim_data["bandwidth"],
                 "quantum_verification": await self._generate_quantum_verification(esim_data),
+                "zk_proof": await self.zk_proof_generator.generate_proof(esim_data),
                 "timestamp": int(time.time()),
                 "network_signature": await self._generate_network_signature(esim_data)
             }

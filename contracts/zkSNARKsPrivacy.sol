@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -42,7 +41,7 @@ contract SecureTransactions is ReentrancyGuard, Ownable {
         uint[2] memory c,
         uint[2] memory input
     ) public view returns (bool) {
-        return verifier.verifyProof(a, b, c, input);
+        return verifier.verifyZKProof(a, b, c, input);
     }
 
     /**

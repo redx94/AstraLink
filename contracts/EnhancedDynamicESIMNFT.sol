@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
@@ -9,6 +8,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "./QuantumVerifier.sol";
 import "./ESIMBenefitsManager.sol";
+import "./Verifier.sol";
 
 /**
  * @title EnhancedDynamicESIMNFT
@@ -31,6 +31,7 @@ contract EnhancedDynamicESIMNFT is
     // External contract references
     QuantumVerifier public quantumVerifier;
     ESIMBenefitsManager public benefitsManager;
+    Verifier public zkVerifier;
 
     struct ESIMData {
         string carrier;
@@ -73,13 +74,15 @@ contract EnhancedDynamicESIMNFT is
 
     constructor(
         address _quantumVerifier,
-        address _benefitsManager
+        address _benefitsManager,
+        address _zkVerifier
     ) ERC721("DynamicESIM", "ESIM") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
         
         quantumVerifier = QuantumVerifier(_quantumVerifier);
         benefitsManager = ESIMBenefitsManager(_benefitsManager);
+        zkVerifier = Verifier(_zkVerifier);
         
         _initializeThemeMultipliers();
     }
@@ -90,10 +93,17 @@ contract EnhancedDynamicESIMNFT is
         uint256 bandwidth,
         string memory theme,
         string memory uri,
-        bytes32 quantumProof
+        bytes32 quantumProof,
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input
     ) external onlyRole(MINTER_ROLE) nonReentrant returns (uint256) {
         require(bandwidth <= carrierBandwidthLimits[carrier], "Bandwidth exceeds limit");
         require(themeMultipliers[theme] > 0, "Invalid theme");
+        
+        // Verify zkSNARK proof
+        require(zkVerifier.verifyZKProof(a, b, c, input), "Invalid zkSNARK proof");
         
         // Increment token ID
         _tokenIdCounter.increment();
@@ -132,7 +142,11 @@ contract EnhancedDynamicESIMNFT is
     function activateESIM(
         uint256 tokenId,
         bytes32 activationCode,
-        bytes32 quantumProof
+        bytes32 quantumProof,
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input
     ) external nonReentrant {
         require(_isApprovedOrOwner(_msgSender(), tokenId), "Not approved");
         require(!esimData[tokenId].active, "Already activated");
@@ -147,6 +161,9 @@ contract EnhancedDynamicESIMNFT is
             _verifyQuantumProof(tokenId, quantumProof),
             "Invalid quantum proof"
         );
+
+        // Verify zkSNARK proof
+        require(zkVerifier.verifyZKProof(a, b, c, input), "Invalid zkSNARK proof");
         
         ESIMData storage esim = esimData[tokenId];
         esim.active = true;
