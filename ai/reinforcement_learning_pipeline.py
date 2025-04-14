@@ -221,3 +221,9 @@ def train_network_optimization(config: Dict[str, Any]):
             logger.info(f"Episode {episode}/{episodes}, Reward: {episode_reward:.2f}, Epsilon: {agent.epsilon:.2f}")
 
     return agent
+
+def discover_and_integrate_reinforcement_learning_component(component):
+    """
+    Dynamically discover and integrate a new reinforcement learning component into the system.
+    """
+    component.integrate()

@@ -28,8 +28,12 @@ class ThreatDetectionTaskHandler(TaskHandler):
             alerts.append(alert)
         return alerts
 
+    def discover_and_integrate_threat_detection_component(self, component):
+        """
+        Dynamically discover and integrate a new threat detection component into the system.
+        """
+        component.integrate(self)
+
 class LogAnalyzer:
     def extract_metric(self, log):
         return log.get("metric")
-
-# Example usage (moved to ai_agent_framework.py)

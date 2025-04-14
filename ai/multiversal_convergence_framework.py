@@ -85,6 +85,13 @@ class MultiversalConvergence:
         # This function should contain the logic to validate a single timeline
         return True
 
+    def discover_and_integrate_component(self, component):
+        """
+        Dynamically discover and integrate a new component into the system.
+        """
+        self.components.append(component)
+        component.integrate(self)
+
 # Test instance
 systems = [AIAgent("Chat AstraLink", "System sync")]
 muf = MultiversalConvergence(systems)

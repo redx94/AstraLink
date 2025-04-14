@@ -59,6 +59,16 @@ class ServiceContainer:
             logger.error(f"Failed to create instance of {descriptor.service_class.__name__}: {str(e)}")
             raise
 
+    def discover_and_integrate_component(self, component):
+        """
+        Dynamically discover and integrate a new service component into the system.
+        """
+        self._services[component.__name__] = ServiceDescriptor(
+            service_class=component,
+            singleton=True
+        )
+        component.integrate(self)
+
 @lru_cache()
 def get_container() -> ServiceContainer:
     container = ServiceContainer()

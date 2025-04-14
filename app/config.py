@@ -30,6 +30,16 @@ class Settings(BaseSettings):
         env_file = ".env"
         case_sensitive = True
 
+    def discover_and_integrate_component(self, component):
+        """
+        Dynamically discover and integrate a new configuration component into the system.
+        """
+        component.integrate(self)
+
 @lru_cache()
 def get_settings() -> Settings:
-    return Settings()
+    settings = Settings()
+    # Integrate dynamic configuration components
+    for component in settings.components:
+        component.integrate(settings)
+    return settings

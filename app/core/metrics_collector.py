@@ -19,6 +19,7 @@ class MetricsCollector:
         self._histograms: Dict[str, prom.Histogram] = {}
         self._events: List[MetricEvent] = []
         self._setup_default_metrics()
+        self.components = []
 
     def _setup_default_metrics(self):
         self._metrics["quantum_operations"] = prom.Counter(
@@ -57,6 +58,10 @@ class MetricsCollector:
 
         self._events.clear()
 
+        # Integrate dynamic metrics collection components
+        for component in self.components:
+            await component.collect()
+
     def record_event(self, event: MetricEvent):
         self._events.append(event)
 
@@ -76,3 +81,10 @@ class MetricsCollector:
             value=reliability,
             labels={"component": "quantum_system_reliability"}
         ))
+
+    def discover_and_integrate_component(self, component):
+        """
+        Dynamically discover and integrate a new metrics collection component into the system.
+        """
+        self.components.append(component)
+        component.integrate(self)

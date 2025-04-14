@@ -82,6 +82,11 @@ class NodeManager:
             # Get network status
             network_status = await self._check_network_status(node)
             
+            # Integrate dynamic node management components
+            for component in self.node_management_components:
+                component_status = await component.get_status(node)
+                metrics.update(component_status)
+            
             return {
                 "node_id": node_id,
                 "status": "active" if metrics['healthy'] else "degraded",
@@ -173,6 +178,13 @@ class NodeManager:
         except Exception as e:
             logger.error(f"Version control maintenance failed: {e}")
             raise
+
+    def discover_and_integrate_node_management_component(self, component):
+        """
+        Dynamically discover and integrate a new node management component into the system.
+        """
+        self.node_management_components.append(component)
+        component.integrate(self)
 
 node_manager = NodeManager()
 

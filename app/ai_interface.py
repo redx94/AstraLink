@@ -21,6 +21,7 @@ class AISystem:
     def __init__(self, endpoint: str):
         self.endpoint = endpoint
         self.models = {}
+        self.components = []
         
     async def check_health(self) -> bool:
         try:
@@ -35,6 +36,12 @@ class AISystem:
             logger.info(f"Predicting material properties for structure: {structure}")
             # Implement material property prediction
             prediction = await self._run_prediction_model(structure)
+            
+            # Integrate dynamic AI system components
+            for component in self.components:
+                component_prediction = await component.predict(structure)
+                prediction.update(component_prediction)
+            
             logger.info(f"Prediction result: {prediction}")
             return AIModelResult(
                 prediction=prediction,
@@ -52,3 +59,10 @@ class AISystem:
             "property_2": 0.6,
             "property_3": 0.9
         }
+
+    def discover_and_integrate_component(self, component):
+        """
+        Dynamically discover and integrate a new AI system component into the system.
+        """
+        self.components.append(component)
+        component.integrate(self)

@@ -185,6 +185,12 @@ async def startup():
 async def startup_event():
     await startup()
 
+def discover_and_integrate_api_component(component):
+    """
+    Dynamically discover and integrate a new API component into the system.
+    """
+    component.integrate(app)
+
 if __name__ == "__main__":
     uvicorn.run(
         app,

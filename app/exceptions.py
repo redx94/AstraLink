@@ -29,6 +29,7 @@ class AstraLinkException(Exception):
         self.correlation_id = correlation_id
         self.context = context or {}
         self.timestamp = timestamp or datetime.utcnow()
+        self.components = []
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert exception to a structured dictionary format."""
@@ -39,6 +40,13 @@ class AstraLinkException(Exception):
             "context": self.context,
             "timestamp": self.timestamp.isoformat()
         }
+
+    def discover_and_integrate_component(self, component):
+        """
+        Dynamically discover and integrate a new exception handling component into the system.
+        """
+        self.components.append(component)
+        component.integrate(self)
 
 class QuantumSystemError(AstraLinkException):
     """Raised when quantum system operations fail."""

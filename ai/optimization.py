@@ -1,6 +1,7 @@
 from sklearn.model_selection import GridSearchCV, cross_val_score
 from sklearn.linear_model import LinearRegression
 import numpy as np
+import logging
 
 source = [performance_data]
 
@@ -14,6 +15,7 @@ class NetworkOptimizationModel(GridSearchCV):
         self.data = data
         self.targets = targets
         self.fit(self.data, self.targets)
+        self.optimization_models = []
 
     def optimize_bandwidth(self, server_data):
         """Optimize network bandwidth allocation using ML"""
@@ -32,6 +34,11 @@ class NetworkOptimizationModel(GridSearchCV):
             
             # Generate optimization plan
             optimization_plan = self._create_bandwidth_plan(quantum_corrected)
+            
+            # Integrate dynamic optimization models
+            for model in self.optimization_models:
+                model_optimization = model.optimize(server_data)
+                optimization_plan.update(model_optimization)
             
             return {
                 "allocation": optimization_plan,
@@ -52,3 +59,10 @@ class NetworkOptimizationModel(GridSearchCV):
             "mean_score": np.mean(scores),
             "std_dev": np.std(scores)
         }
+
+    def discover_and_integrate_optimization_model(self, model):
+        """
+        Dynamically discover and integrate a new optimization model into the system.
+        """
+        self.optimization_models.append(model)
+        model.integrate(self)
