@@ -81,3 +81,41 @@ quantum_mod = QuantumForesight(quantum_data)
 test_input = np.array([7, 8, 9])
 predicted = quantum_mod.predict(test_input)
 print("Predicted values: ", predicted)
+
+import unittest
+
+class TestQuantumForesight(unittest.TestCase):
+    def setUp(self):
+        self.quantum_data = np.array([[1, 2, 3], [4, 5, 6]])
+        self.quantum_mod = QuantumForesight(self.quantum_data)
+        self.test_input = np.array([7, 8, 9])
+
+    def test_predict(self):
+        predicted = self.quantum_mod.predict(self.test_input)
+        self.assertIsNotNone(predicted)
+        self.assertTrue(np.all(predicted >= 0))
+
+    def test_uncertainty_threshold(self):
+        self.quantum_mod.uncertainty_threshold = 0.05
+        predicted = self.quantum_mod.predict(self.test_input)
+        self.assertIsNone(predicted)
+
+    def test_invalid_input(self):
+        with self.assertRaises(ValueError):
+            self.quantum_mod.predict(np.array([]))
+
+    def test_component_integration(self):
+        class MockComponent:
+            def predict(self, input_data):
+                return input_data * 0.1
+
+            def integrate(self, system):
+                pass
+
+        mock_component = MockComponent()
+        self.quantum_mod.discover_and_integrate_quantum_foresight_component(mock_component)
+        predicted = self.quantum_mod.predict(self.test_input)
+        self.assertTrue(np.all(predicted > self.test_input))
+
+if __name__ == '__main__':
+    unittest.main()

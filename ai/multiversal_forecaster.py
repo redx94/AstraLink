@@ -1,6 +1,8 @@
 import asyncio
 from typing import Dict, Any
 import time
+import numpy as np
+from sklearn.linear_model import LinearRegression
 
 class MultiversalForecaster:
     """AI-driven network load forecasting system"""
@@ -8,6 +10,7 @@ class MultiversalForecaster:
     def __init__(self):
         self.model_initialized = False
         self.forecasting_components = []
+        self.model = LinearRegression()
         print("[MultiversalForecaster] Initializing AI forecasting system")
         
     async def predict_network_load(self, 
@@ -76,3 +79,14 @@ class MultiversalForecaster:
         """
         self.forecasting_components.append(component)
         component.integrate(self)
+    
+    def train_model(self, X, y):
+        """Train the ML model with historical data"""
+        self.model.fit(X, y)
+        self.model_initialized = True
+
+    def predict(self, X):
+        """Make predictions using the trained ML model"""
+        if not self.model_initialized:
+            raise ValueError("Model is not trained yet")
+        return self.model.predict(X)

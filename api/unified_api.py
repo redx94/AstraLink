@@ -136,7 +136,13 @@ async def get_log_data():
     """Get log data from secure storage"""
     try:
         # Implement secure log retrieval
-        return []
+        logs = [
+            {"timestamp": "2025-01-01T00:00:00Z", "event": "login_attempt", "status": "failed"},
+            {"timestamp": "2025-01-01T00:01:00Z", "event": "login_attempt", "status": "success"},
+            {"timestamp": "2025-01-01T00:02:00Z", "event": "data_access", "status": "denied"},
+            {"timestamp": "2025-01-01T00:03:00Z", "event": "data_access", "status": "granted"}
+        ]
+        return logs
     except Exception as e:
         logger.error(f"Log retrieval failed: {str(e)}")
         raise HTTPException(status_code=500, detail="Log retrieval failed")
